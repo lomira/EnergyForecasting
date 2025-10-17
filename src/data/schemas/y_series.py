@@ -5,6 +5,7 @@ import pandas as pd
 from src.config import get_settings
 
 SETTINGS = get_settings()
+RAW_DATA_PATH = SETTINGS.data_dir / SETTINGS.raw_dir
 ALLOWED_TIMEZONES = SETTINGS.allowed_timezones
 GRANULARITY_FREQ_MAP = SETTINGS.granularity_freq_map
 
@@ -87,3 +88,8 @@ class TimeSeriesData(BaseModel):
             dataframe=df,
             granularity=granularity_str,
         )
+    
+    # Write the dataframe to CSV
+    def to_csv(self) -> str:
+        """Convert the time series DataFrame to a CSV string."""
+        return self.dataframe.to_csv(RAW_DATA_PATH / f"y_{self.granularity}.csv")
