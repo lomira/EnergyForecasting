@@ -88,7 +88,7 @@ class TimeSeriesData(BaseModel):
             dataframe=df,
             granularity=granularity_str,
         )
-    
+
     # Write the dataframe to CSV
     def to_csv(self) -> str:
         """Convert the time series DataFrame to a CSV string."""

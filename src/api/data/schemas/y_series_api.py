@@ -2,7 +2,6 @@ from pydantic import BaseModel, ConfigDict, field_validator
 import pandas as pd
 import io
 from src.config import get_settings
-from typing import Any
 from src.data.schemas.y_series import TimeSeriesData
 
 SETTINGS = get_settings()
@@ -26,7 +25,9 @@ class APITimeSeriesInput(BaseModel):
 
         # Validate timezone early
         if raw_tz not in ALLOWED_TIMEZONES:
-            raise ValueError(f"Timezone '{raw_tz}' not allowed. Allowed: {ALLOWED_TIMEZONES}")
+            raise ValueError(
+                f"Timezone '{raw_tz}' not allowed. Allowed: {ALLOWED_TIMEZONES}"
+            )
 
         # Parse CSV text into DataFrame
         try:
@@ -37,7 +38,9 @@ class APITimeSeriesInput(BaseModel):
         if "timestamp" not in df.columns:
             raise ValueError("CSV must contain a 'timestamp' column.")
         if len(df.columns) != 2:
-            raise ValueError(f"CSV must contain exactly two columns: timestamp and value. Found: {list(df.columns)}")
+            raise ValueError(
+                f"CSV must contain exactly two columns: timestamp and value. Found: {list(df.columns)}"
+            )
 
         # Convert timestamp column
         try:
@@ -48,14 +51,18 @@ class APITimeSeriesInput(BaseModel):
         # Set index
         df.set_index("timestamp", inplace=True)
 
-        # Timezone normalization
+        # Timezone normalization with explicit runtime type check
         try:
-            if df.index.tz is None:
-                df.index = df.index.tz_localize(raw_tz)
+            idx = df.index
+            if not isinstance(idx, pd.DatetimeIndex):
+                raise ValueError("Index must be DatetimeIndex after setting 'timestamp'.")
+            # idx is a DatetimeIndex here (narrowed by isinstance)
+            if idx.tz is None:
+                df.index = idx.tz_localize(raw_tz)
             else:
-                df.index = df.index.tz_convert(raw_tz)
+                df.index = idx.tz_convert(raw_tz)
         except Exception as e:
-            raise ValueError("Failed to convert timezone to index.") from e
+            raise ValueError("Failed to convert timezone on index.") from e
 
         # Rename value column to a standard name if needed (keep first non-timestamp column)
         value_col = df.columns[0]
@@ -67,13 +74,17 @@ class APITimeSeriesInput(BaseModel):
     @field_validator("granularity")
     def validate_granularity(cls, v: str) -> str:
         if v not in GRANULARITY_FREQ_MAP:
-            raise ValueError(f"Granularity '{v}' is not supported. Allowed: {list(GRANULARITY_FREQ_MAP.keys())}")
+            raise ValueError(
+                f"Granularity '{v}' is not supported. Allowed: {list(GRANULARITY_FREQ_MAP.keys())}"
+            )
         return v
 
     @field_validator("timezone")
     def validate_timezone(cls, v: str) -> str:
         if v not in ALLOWED_TIMEZONES:
-            raise ValueError(f"Timezone '{v}' is not in allowed list: {ALLOWED_TIMEZONES}")
+            raise ValueError(
+                f"Timezone '{v}' is not in allowed list: {ALLOWED_TIMEZONES}"
+            )
         return v
 
     @field_validator("dataframe")
@@ -83,7 +94,9 @@ class APITimeSeriesInput(BaseModel):
         if df.index.tz is None:
             raise ValueError("DataFrame index must be timezone-aware.")
         if len(df.columns) != 1:
-            raise ValueError(f"DataFrame must have exactly one data column, found {len(df.columns)}.")
+            raise ValueError(
+                f"DataFrame must have exactly one data column, found {len(df.columns)}."
+            )
         value_series = df.iloc[:, 0]
         if not pd.api.types.is_numeric_dtype(value_series):
             raise ValueError("Data column must be numeric.")
