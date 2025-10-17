@@ -42,6 +42,8 @@ class AppSettings(BaseSettings):
         alias="WEATHER_VARIABLES",
     )
 
+    api_base : str = Field(default="http://localhost:8000/api/v1", alias="API_BASE")
+
     @property
     def granularity_options(self) -> list[str]:
         """Get list of supported granularity options."""
