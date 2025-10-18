@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+
 from src.api.data.routers import y_series_route
 
 app = FastAPI(title="Energy Forecasting API", version="1.0.0", root_path="/api/v1")

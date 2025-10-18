@@ -1,6 +1,7 @@
 from pathlib import Path
-from pydantic_settings import BaseSettings
+
 from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class AppSettings(BaseSettings):
@@ -11,9 +12,7 @@ class AppSettings(BaseSettings):
     supported_file_extensions: list[str] = Field(
         default=[".csv"], alias="SUPPORTED_FILE_EXTENSIONS"
     )
-    allowed_timezones: list[str] = Field(
-        default=["UTC", "Europe/Paris"], alias="ALLOWED_TIMEZONES"
-    )
+    allowed_timezones: list[str] = Field(default=["UTC", "Europe/Paris"], alias="ALLOWED_TIMEZONES")
 
     granularity_freq_map: dict[str, str] = Field(
         default={

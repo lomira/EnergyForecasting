@@ -1,7 +1,9 @@
-from pathlib import Path
 import re
-from pydantic import BaseModel, field_validator, ConfigDict
+from pathlib import Path
+
 import pandas as pd
+from pydantic import BaseModel, ConfigDict, field_validator
+
 from src.config import get_settings
 
 SETTINGS = get_settings()
@@ -37,7 +39,7 @@ class TimeSeriesData(BaseModel):
         # 3. Validate the Column Structure
         if len(df.columns) != 1:
             raise ValueError(
-                f"DataFrame must have exactly one data column, but found {len(df.columns)}."
+                f"DataFrame must have exactly one data column, {len(df.columns)} found"
             )
 
         # 4. Validate the Data Column Content (Vectorized Checks)
@@ -63,22 +65,21 @@ class TimeSeriesData(BaseModel):
 
     @classmethod
     def from_csv(cls, file_path: Path) -> "TimeSeriesData":
-        """Load time series data from a CSV file and create a TimeSeriesData instance."""
+        """Load time series data from a CSV file and create a TimeSeriesData instance"""
 
         # 0. Check if file exists and file extension is supported
         if not file_path.exists():
             raise FileNotFoundError(f"File {file_path} does not exist.")
         if file_path.suffix.lower() not in SETTINGS.supported_file_extensions:
             raise ValueError(
-                f"File extension {file_path.suffix} is not supported. Supported extensions: {SETTINGS.supported_file_extensions}"
+                f"File extension {file_path.suffix} is not supported. \
+                    Supported extensions: {SETTINGS.supported_file_extensions}"
             )
         # Files are always named like YYY_XXXX_{granularity}.csv
         # 1. Extract granularity from filename
         match = re.search(r"_([^_]+)\.csv$", file_path.name, re.IGNORECASE)
         if not match:
-            raise ValueError(
-                f"Could not extract granularity from filename: {file_path.name}"
-            )
+            raise ValueError(f"Could not extract granularity from filename: {file_path.name}")
         granularity_str = match.group(1).lower()
 
         # 2. Read CSV and set the timestamp column as the index

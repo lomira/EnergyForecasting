@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from fastapi import APIRouter, File, Form, UploadFile
+
 from src.api.data.schemas.y_series_api import APITimeSeriesInput
 
 router = APIRouter(prefix="/ingest", tags=["ingestion"])
@@ -6,9 +9,9 @@ router = APIRouter(prefix="/ingest", tags=["ingestion"])
 
 @router.post("/y-series-csv")
 async def upload_y_series_csv(
-    file: UploadFile = File(...),
-    granularity: str = Form(...),
-    timezone: str = Form(...),
+    file: Annotated[UploadFile, File(...)],
+    granularity: Annotated[str, Form(...)],
+    timezone: Annotated[str, Form(...)],
 ):
     """Endpoint to upload Y series CSV data."""
     content = await file.read()

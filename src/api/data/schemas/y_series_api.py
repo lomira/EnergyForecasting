@@ -1,6 +1,8 @@
-from pydantic import BaseModel, ConfigDict, field_validator
-import pandas as pd
 import io
+
+import pandas as pd
+from pydantic import BaseModel, ConfigDict, field_validator
+
 from src.config import get_settings
 from src.data.schemas.y_series import TimeSeriesData
 
@@ -25,9 +27,7 @@ class APITimeSeriesInput(BaseModel):
 
         # Validate timezone early
         if raw_tz not in ALLOWED_TIMEZONES:
-            raise ValueError(
-                f"Timezone '{raw_tz}' not allowed. Allowed: {ALLOWED_TIMEZONES}"
-            )
+            raise ValueError(f"Timezone '{raw_tz}' not allowed. Allowed: {ALLOWED_TIMEZONES}")
 
         # Parse CSV text into DataFrame
         try:
@@ -39,7 +39,8 @@ class APITimeSeriesInput(BaseModel):
             raise ValueError("CSV must contain a 'timestamp' column.")
         if len(df.columns) != 2:
             raise ValueError(
-                f"CSV must contain exactly two columns: timestamp and value. Found: {list(df.columns)}"
+                f"CSV must contain exactly two columns: timestamp and value. \
+                    Found: {list(df.columns)}"
             )
 
         # Convert timestamp column
@@ -75,16 +76,15 @@ class APITimeSeriesInput(BaseModel):
     def validate_granularity(cls, v: str) -> str:
         if v not in GRANULARITY_FREQ_MAP:
             raise ValueError(
-                f"Granularity '{v}' is not supported. Allowed: {list(GRANULARITY_FREQ_MAP.keys())}"
+                f"Granularity '{v}' is not supported. \
+                    Allowed: {list(GRANULARITY_FREQ_MAP.keys())}"
             )
         return v
 
     @field_validator("timezone")
     def validate_timezone(cls, v: str) -> str:
         if v not in ALLOWED_TIMEZONES:
-            raise ValueError(
-                f"Timezone '{v}' is not in allowed list: {ALLOWED_TIMEZONES}"
-            )
+            raise ValueError(f"Timezone '{v}' is not in allowed list: {ALLOWED_TIMEZONES}")
         return v
 
     @field_validator("dataframe")

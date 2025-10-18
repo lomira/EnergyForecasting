@@ -1,15 +1,14 @@
 import sys
 from pathlib import Path
+
 import requests
 import streamlit as st
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import get_settings  # noqa:E402
-
 
 SETTINGS = get_settings()
 
@@ -34,9 +33,7 @@ def _api_post_csv(csv_bytes: str, granularity: str, timezone: str):
 
 def page_upload():
     st.title("Upload Time Series Data")
-    uploaded_file = st.file_uploader(
-        "Upload a consumption CSV file (timestamp,value).", type="csv"
-    )
+    uploaded_file = st.file_uploader("Upload a consumption CSV file (timestamp,value).", type="csv")
     granularity = st.selectbox("Granularity", SETTINGS.granularity_options, index=0)
     timezone = st.selectbox("Timezone", SETTINGS.allowed_timezones, index=0)
 
