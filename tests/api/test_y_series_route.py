@@ -6,26 +6,21 @@ from src.config import get_settings
 
 SETTTINGS = get_settings()
 
-print(SETTTINGS.granularity_freq_map)
+# TODO Timezone handling in tests
+
 # STRATEGIES
-# TODO Replace with setting before commit
-
-
-# PEriods strategy
-periods_strategy = strategies.integers(min_value=3, max_value=100)
+# Periods strategy
+periods_strategy = strategies.integers(min_value=3, max_value=1_000)
 
 # Frequency strategy
-# Replace Frequency with Literal type by the settngs
-
 Frequency = SETTTINGS.granularity_freq_map
-frequency_strategy = strategies.sampled_from(["h", "d", "MS"])
+frequency_strategy = strategies.sampled_from(list(Frequency.values()))
 
 # Timestamp index strategy
 naive_start_date_strategy = strategies.datetimes(
     min_value=pd.Timestamp("1998-01-01").to_pydatetime(),
     max_value=pd.Timestamp("2025-12-31").to_pydatetime(),
 )
-
 
 # Value column strategy
 value_element_strategy = strategies.floats(
@@ -39,7 +34,7 @@ def timeseries_data_strategy(draw):
     periods = draw(periods_strategy)
     freq = draw(frequency_strategy)
     start_naive = draw(naive_start_date_strategy)
-
+    # Instead of hardcoding freq mapping, we can reverse lookup from the config
     if freq == "h":
         freq_out = "hourly"
         floored_start_naive = pd.Timestamp(start_naive).replace(minute=0, second=0, microsecond=0)

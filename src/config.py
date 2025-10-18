@@ -16,9 +16,9 @@ class AppSettings(BaseSettings):
 
     granularity_freq_map: dict[str, str] = Field(
         default={
-            "hourly": "H",
-            "daily": "D",
-            "monthly": "M",
+            "hourly": "h",
+            "daily": "d",
+            "monthly": "MS",
         },
         alias="GRANULARITY_FREQ_MAP",
     )
