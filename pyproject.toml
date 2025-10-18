@@ -16,7 +16,28 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.3.0",
     "pytest>=8.4.2",
     "ruff>=0.14.1",
     "ty>=0.0.1a23",
 ]
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+target-version = "py313"
+respect-gitignore = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+line-ending = "auto"
+
