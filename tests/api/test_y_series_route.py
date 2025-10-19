@@ -1,24 +1,35 @@
 import pandas as pd
-
+from typing import TypedDict
 from hypothesis import given, strategies
 from src.api.data.schemas.y_series_api import APITimeSeriesInput
-
 from src.config import get_settings
 
+SETTINGS = get_settings()
 
-SETTTINGS = get_settings()
+
+class TimeseriesStrategyPayload(TypedDict):
+    """TypedDict for the timeseries test data strategy result."""
+
+    csv_text: str
+    granularity: str
+    timezone: str
+    periods: int
+    freq_symbol: str
+
 
 # STRATEGIES
 # Timezone strategy
 timezone_strategy_in = strategies.sampled_from(["UTC", "Europe/Paris", None])
-timezone_strategy_out = strategies.sampled_from(SETTTINGS.allowed_timezones)
+timezone_strategy_out = strategies.sampled_from(SETTINGS.allowed_timezones)
 
 # Periods strategy
 periods_strategy = strategies.integers(min_value=3, max_value=100)
 
 # Frequency strategy
-Frequency = SETTTINGS.granularity_freq_map
-frequency_strategy = strategies.sampled_from(list(Frequency.values()))
+freq_map = SETTINGS.granularity_freq_map  # maps granularity -> freq symbol
+# Invert mapping to derive granularity from freq symbol
+granularity_from_freq = {v: k for k, v in freq_map.items()}
+frequency_strategy = strategies.sampled_from(list(freq_map.values()))
 
 # Timestamp index strategy
 naive_start_date_strategy = strategies.datetimes(
@@ -32,55 +43,85 @@ value_element_strategy = strategies.floats(
 )
 
 
-# Combining the two into a DatetimeIndex strategy
 @strategies.composite
-def timeseries_data_strategy(draw):
+def timeseries_data_strategy(draw) -> TimeseriesStrategyPayload:
+    """Generate a realistic timeseries payload for testing API input."""
+    # Draw basic parameters
     periods = draw(periods_strategy)
-    freq = draw(frequency_strategy)
+    freq_symbol = draw(frequency_strategy)
     timezone_in = draw(timezone_strategy_in)
-    timezone_out = timezone_in
-    if timezone_in is None:
-        timezone_out = draw(timezone_strategy_out)
+    # if we draw No TZ as input then we must draw a valid one for output
+    timezone_out = timezone_in if timezone_in is not None else draw(timezone_strategy_out)
 
-    start_naive = draw(naive_start_date_strategy)
-    start_naive = pd.Timestamp(start_naive).tz_localize(None)
-    # Instead of hardcoding freq mapping, we can reverse lookup from the config
-    if freq == "h":
-        freq_out = "hourly"
-        floored_start_naive = pd.Timestamp(start_naive).replace(minute=0, second=0)
-    elif freq == "d":
-        freq_out = "daily"
-        floored_start_naive = pd.Timestamp(start_naive).replace(hour=0, minute=0, second=0)
-    else:
-        freq_out = "monthly"
-        floored_start_naive = pd.Timestamp(start_naive).replace(day=1, hour=0, minute=0, second=0)
-    floored_start_tz = floored_start_naive.tz_localize(timezone_in)
+    start_naive = pd.Timestamp(draw(naive_start_date_strategy)).tz_localize(None)
+    # Floor the start time according to frequency to ensure clean, aligned series
+    if freq_symbol == "h":
+        floored_start_naive = start_naive.replace(minute=0, second=0, microsecond=0)
+    elif freq_symbol == "d":
+        floored_start_naive = start_naive.replace(hour=0, minute=0, second=0, microsecond=0)
+    else:  # 'MS' for month start
+        floored_start_naive = start_naive.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
+    floored_start_tz = floored_start_naive.tz_localize(timezone_out)
+
+    # Generate random values for the series
     values_list = draw(strategies.lists(value_element_strategy, min_size=periods, max_size=periods))
 
-    ts_index = pd.date_range(start=floored_start_tz, periods=periods, freq=freq)
-
+    # Create a DatetimeIndex and DataFrame with the generated data
+    ts_index = pd.date_range(start=floored_start_tz, periods=periods, freq=freq_symbol)
     df = pd.DataFrame({"value": values_list}, index=ts_index)
-    # Convert df to a simple dataframe where the index becomes a column named 'timestamp'
+
+    # Convert DataFrame to CSV format expected by the API (timestamp column + value column)
     df_out = df.reset_index().rename(columns={"index": "timestamp"})
-    # and the value is a column named 'value'
-    # convert the output to csv
-    df_out_csv = df_out.to_csv(index=False)
+    csv_text = df_out.to_csv(index=False)
 
-    return df_out_csv, periods, freq, freq_out, timezone_out
+    # Derive granularity from frequency symbol
+    granularity = granularity_from_freq.get(freq_symbol, "monthly")
+    if freq_symbol == "MS":  # Special case as pandas may infer 'ME' for month end
+        granularity = "monthly"
+
+    return TimeseriesStrategyPayload(
+        csv_text=csv_text,
+        granularity=granularity,
+        timezone=timezone_out,
+        periods=periods,
+        freq_symbol=freq_symbol,
+    )
 
 
-@given(ts_data_tuple=timeseries_data_strategy())
-def test_data_generation_is_continuous(ts_data_tuple: tuple[pd.DataFrame, str, str]) -> None:
-    ts_data, periods, freq, granularity, timezone_out = ts_data_tuple
-    raw_data = (ts_data, granularity, timezone_out)
+@given(ts_data_payload=timeseries_data_strategy())
+def test_data_generation_is_continuous(ts_data_payload: TimeseriesStrategyPayload) -> None:
+    csv_text = ts_data_payload["csv_text"]
+    expected_granularity = ts_data_payload["granularity"]
+    expected_timezone = ts_data_payload["timezone"]
+    expected_periods = ts_data_payload["periods"]
+    expected_freq_symbol = ts_data_payload["freq_symbol"]
+
+    raw_data = (csv_text, expected_granularity, expected_timezone)
     api_input = APITimeSeriesInput.from_api_data(raw_data)
-    assert isinstance(api_input, APITimeSeriesInput)
-    assert api_input.granularity == granularity
-    fr = pd.infer_freq(api_input.dataframe.index).upper()
-    if fr == "ME":
-        fr = "MS"
-    assert fr == freq.upper()
-    assert isinstance(api_input.dataframe, pd.DataFrame)
-    assert len(api_input.dataframe.index) == periods
-    assert str(api_input.dataframe.index.tz) == timezone_out
+
+    # Basic type and field validation
+    assert isinstance(api_input, APITimeSeriesInput), "Should create APITimeSeriesInput instance"
+    assert api_input.granularity == expected_granularity, (
+        f"Granularity mismatch: {api_input.granularity} != {expected_granularity}"
+    )
+    assert api_input.timezone == expected_timezone, (
+        f"Timezone mismatch: {api_input.timezone} != {expected_timezone}"
+    )
+
+    # Frequency inference: pandas may return 'ME' for month-end; normalize to 'MS' for comparison
+    inferred_freq = pd.infer_freq(api_input.dataframe.index).upper()
+    if inferred_freq == "ME":
+        inferred_freq = "MS"
+    assert inferred_freq == expected_freq_symbol.upper(), (
+        f"Frequency mismatch: {inferred_freq} != {expected_freq_symbol}"
+    )
+
+    # DataFrame structure and length validation
+    assert isinstance(api_input.dataframe, pd.DataFrame), "DataFrame should be a pandas DataFrame"
+    assert len(api_input.dataframe.index) == expected_periods, (
+        f"Length mismatch: {len(api_input.dataframe.index)} != {expected_periods}"
+    )
+    assert str(api_input.dataframe.index.tz) == expected_timezone, (
+        f"Index timezone mismatch: {api_input.dataframe.index.tz} != {expected_timezone}"
+    )
