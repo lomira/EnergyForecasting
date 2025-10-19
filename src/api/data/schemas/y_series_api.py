@@ -92,6 +92,22 @@ class APITimeSeriesInput(BaseModel):
             raise ValueError(
                 f"DataFrame must have exactly one data column, found {len(df.columns)}."
             )
+
+        if len(df.index) < 3:
+            raise ValueError("DataFrame must contain at least three data points.")
+
+        # Check if the date index contains all dates from start to end with no gaps
+        infer_freq = pd.infer_freq(df.index)
+        if infer_freq is None:
+            raise ValueError(
+                "DataFrame index frequency could not be inferred; data may be irregular."
+            )
+        full_index = pd.date_range(
+            start=df.index.min(), end=df.index.max(), freq=pd.infer_freq(df.index)
+        )
+        if not df.index.equals(full_index):
+            raise ValueError("DataFrame index frequency could be inferred, but missing dates.")
+
         value_series = df.iloc[:, 0]
         if not pd.api.types.is_numeric_dtype(value_series):
             raise ValueError("Data column must be numeric.")

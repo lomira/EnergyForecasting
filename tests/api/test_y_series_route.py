@@ -1,9 +1,12 @@
 import pandas as pd
 from hypothesis import given
+import pytest
+from pydantic import ValidationError
 from src.api.data.schemas.y_series_api import APITimeSeriesInput
 from tests.strategies.timeseries_data_strategy import (
-    timeseries_data_strategy,
     TimeseriesStrategyPayload,
+    timeseries_data_strategy,
+    invalid_timeseries_data_strategy_missing_row,
 )
 
 
@@ -43,3 +46,26 @@ def test_data_generation_is_continuous(ts_data_payload: TimeseriesStrategyPayloa
     assert str(api_input.dataframe.index.tz) == expected_timezone, (
         f"Index timezone mismatch: {api_input.dataframe.index.tz} != {expected_timezone}"
     )
+
+
+@given(ts_data_payload=invalid_timeseries_data_strategy_missing_row())
+def test_data_generation_with_missing_row(ts_data_payload: TimeseriesStrategyPayload) -> None:
+    csv_text = ts_data_payload["csv_text"]
+    nb_obs = ts_data_payload["periods"]
+    expected_granularity = ts_data_payload["granularity"]
+    expected_timezone = ts_data_payload["timezone"]
+
+    raw_data = (csv_text, expected_granularity, expected_timezone)
+
+    # If less than 3 obs then it should raaise a value error
+    if nb_obs < 3:
+        with pytest.raises(
+            ValidationError, match="DataFrame must contain at least three data points."
+        ):
+            APITimeSeriesInput.from_api_data(raw_data)
+    else:
+        with pytest.raises(
+            ValidationError,
+            match="DataFrame index frequency could not be inferred; data may be irregular.",
+        ):
+            APITimeSeriesInput.from_api_data(raw_data)

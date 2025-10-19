@@ -1,3 +1,4 @@
+import io
 import pandas as pd
 from typing import TypedDict
 from hypothesis import strategies
@@ -84,4 +85,26 @@ def timeseries_data_strategy(draw) -> TimeseriesStrategyPayload:
         timezone=timezone_out,
         periods=periods,
         freq_symbol=freq_symbol,
+    )
+
+
+@strategies.composite
+def invalid_timeseries_data_strategy_missing_row(draw) -> TimeseriesStrategyPayload:
+    """Generate an invalid timeseries CSV payload by removing a random middle row."""
+    valid_payload = draw(timeseries_data_strategy())
+    df = pd.read_csv(io.StringIO(valid_payload["csv_text"].strip()))
+
+    # Choose a random middle data row index to remove (avoid first and last)
+    row_to_remove = draw(strategies.integers(min_value=1, max_value=len(df) - 2))
+    df_invalid = df.drop(index=row_to_remove).reset_index(drop=True)
+
+    invalid_csv_text = df_invalid.to_csv(index=False)
+    invalid_periods = len(df_invalid)
+
+    return TimeseriesStrategyPayload(
+        csv_text=invalid_csv_text,
+        granularity=valid_payload["granularity"],
+        timezone=valid_payload["timezone"],
+        periods=invalid_periods,
+        freq_symbol=valid_payload["freq_symbol"],
     )
