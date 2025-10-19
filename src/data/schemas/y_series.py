@@ -92,5 +92,15 @@ class TimeSeriesData(BaseModel):
 
     # Write the dataframe to CSV
     def to_csv(self) -> str:
-        """Convert the time series DataFrame to a CSV string."""
-        return self.dataframe.to_csv(RAW_DATA_PATH / f"y_{self.granularity}.csv")
+        """Write the time series DataFrame to a CSV file and return CSV text."""
+        from src.config import get_settings
+
+        settings = get_settings()
+        file_path = settings.data_dir / settings.raw_dir / f"y_{self.granularity}.csv"
+        # ensure directory exists
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        # get CSV text
+        csv_text = self.dataframe.to_csv()
+        # write CSV text to disk
+        file_path.write_text(csv_text, encoding="utf-8")
+        return csv_text
