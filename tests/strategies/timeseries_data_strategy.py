@@ -42,6 +42,23 @@ value_element_strategy = strategies.floats(
 )
 
 
+def create_TimeseriesStrategyPayload(
+    csv_text: str,
+    granularity: str,
+    timezone: str,
+    periods: int,
+    freq_symbol: str,
+) -> TimeseriesStrategyPayload:
+    """Helper to create TimeseriesStrategyPayload instances."""
+    return TimeseriesStrategyPayload(
+        csv_text=csv_text,
+        granularity=granularity,
+        timezone=timezone,
+        periods=periods,
+        freq_symbol=freq_symbol,
+    )
+
+
 @strategies.composite
 def timeseries_data_strategy(draw) -> TimeseriesStrategyPayload:
     """Generate a realistic timeseries payload for testing API input."""
@@ -131,5 +148,27 @@ def invalid_timeseries_data_strategy_duplicatetime(draw) -> TimeseriesStrategyPa
         granularity=valid_payload["granularity"],
         timezone=valid_payload["timezone"],
         periods=invalid_periods,
+        freq_symbol=valid_payload["freq_symbol"],
+    )
+
+
+@strategies.composite
+def invalid_timeseries_data_strategy_wrong_timezone(draw) -> TimeseriesStrategyPayload:
+    """Generate an invalid timeseries CSV payload by using a timezone not in allowed list."""
+    valid_payload = draw(timeseries_data_strategy())
+    df = pd.read_csv(io.StringIO(valid_payload["csv_text"].strip()))
+
+    # Choose a timezone that is definitely not in the allowed list
+    invalid_timezone = "Invalid/Timezone"
+    while invalid_timezone in SETTINGS.allowed_timezones:
+        invalid_timezone += "_X"
+
+    invalid_csv_text = df.to_csv(index=False)
+
+    return TimeseriesStrategyPayload(
+        csv_text=invalid_csv_text,
+        granularity=valid_payload["granularity"],
+        timezone=invalid_timezone,
+        periods=valid_payload["periods"],
         freq_symbol=valid_payload["freq_symbol"],
     )
