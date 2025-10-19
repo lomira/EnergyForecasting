@@ -153,6 +153,6 @@ cython_debug/
 # Streamlit
 .streamlit/secrets.toml
 
-test/fixtures/data/*.csv
+tests/fixtures/data/*.csv
 # ignore files in the data folder at the root
 /data/
