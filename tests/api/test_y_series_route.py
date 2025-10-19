@@ -7,6 +7,7 @@ from tests.strategies.timeseries_data_strategy import (
     TimeseriesStrategyPayload,
     timeseries_data_strategy,
     invalid_timeseries_data_strategy_missing_row,
+    invalid_timeseries_data_strategy_duplicatetime,
 )
 
 
@@ -69,3 +70,20 @@ def test_data_generation_with_missing_row(ts_data_payload: TimeseriesStrategyPay
             match="DataFrame index frequency could not be inferred; data may be irregular.",
         ):
             APITimeSeriesInput.from_api_data(raw_data)
+
+
+@given(ts_data_payload=invalid_timeseries_data_strategy_duplicatetime())
+def test_data_generation_with_duplicate_timestamp(
+    ts_data_payload: TimeseriesStrategyPayload,
+) -> None:
+    csv_text = ts_data_payload["csv_text"]
+    expected_granularity = ts_data_payload["granularity"]
+    expected_timezone = ts_data_payload["timezone"]
+
+    raw_data = (csv_text, expected_granularity, expected_timezone)
+
+    with pytest.raises(
+        ValidationError,
+        match="DataFrame index frequency could not be inferred; data may be irregular.",
+    ):
+        APITimeSeriesInput.from_api_data(raw_data)

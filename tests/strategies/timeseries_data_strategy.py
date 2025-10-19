@@ -108,3 +108,28 @@ def invalid_timeseries_data_strategy_missing_row(draw) -> TimeseriesStrategyPayl
         periods=invalid_periods,
         freq_symbol=valid_payload["freq_symbol"],
     )
+
+
+@strategies.composite
+def invalid_timeseries_data_strategy_duplicatetime(draw) -> TimeseriesStrategyPayload:
+    """Generate an invalid timeseries CSV payload by duplicating a random timestamp row."""
+    valid_payload = draw(timeseries_data_strategy())
+    df = pd.read_csv(io.StringIO(valid_payload["csv_text"].strip()))
+
+    # Choose a random data row index to duplicate
+    row_to_duplicate = draw(strategies.integers(min_value=0, max_value=len(df) - 1))
+    row_data = df.iloc[row_to_duplicate]
+
+    # Create a new DataFrame with the duplicated row
+    df_invalid = pd.concat([df, pd.DataFrame([row_data])], ignore_index=True)
+
+    invalid_csv_text = df_invalid.to_csv(index=False)
+    invalid_periods = len(df_invalid)
+
+    return TimeseriesStrategyPayload(
+        csv_text=invalid_csv_text,
+        granularity=valid_payload["granularity"],
+        timezone=valid_payload["timezone"],
+        periods=invalid_periods,
+        freq_symbol=valid_payload["freq_symbol"],
+    )
