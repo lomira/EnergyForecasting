@@ -43,19 +43,24 @@ class APITimeSeriesInput(BaseModel):
                     Found: {list(df.columns)}"
             )
 
-        try:
-            # remove the time zone info from the timestamp column before localizing parsing the string
-            tz_info_regex = r"([+-]\d{2}:?\d{2}|Z)$"
-            timestamps_strings = df["timestamp"].astype(str)
-            timestamps_no_tz = timestamps_strings.str.replace(tz_info_regex, "", regex=True)
-            timestamps_parsed = pd.to_datetime(timestamps_no_tz, errors="raise")
-            df["timestamp"] = pd.Series(timestamps_parsed).dt.tz_localize(raw_tz)
-        except Exception as e:
-            raise ValueError("Failed to parse 'timestamp' values.") from e
-        # Set index
+        # First check if there is some timezone in the first element of timestamp column
+        if pd.api.types.is_string_dtype(df["timestamp"]):
+            first_timestamp = df["timestamp"].iloc[0]
+            if pd.to_datetime(first_timestamp, errors="coerce").tzinfo is None:
+                # Localize to the specified timezone if not tz is provided
+
+                df["timestamp"] = pd.to_datetime(df["timestamp"], errors="raise").dt.tz_localize(  # ty: ignore[unresolved-attribute]
+                    raw_tz
+                )
+            else:
+                # Convert to utc to ensure timezone consistency
+                df["timestamp"] = pd.to_datetime(
+                    df["timestamp"], errors="raise", utc=True
+                ).dt.tz_convert(  # ty: ignore[unresolved-attribute]
+                    raw_tz
+                )
         df.set_index("timestamp", inplace=True)
 
-        # Rename value column to a standard name if needed (keep first non-timestamp column)
         value_col = df.columns[0]
         if value_col.lower() != "value":
             df.rename(columns={value_col: "value"}, inplace=True)
