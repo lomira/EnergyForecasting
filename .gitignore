@@ -156,3 +156,4 @@ cython_debug/
 tests/fixtures/data/*.csv
 # ignore files in the data folder at the root
 /data/
+/data_test/
