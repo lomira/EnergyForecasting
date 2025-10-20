@@ -1,5 +1,5 @@
 from pathlib import Path
-
+from typing import Set
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -49,9 +49,9 @@ class AppSettings(BaseSettings):
         return list(self.granularity_freq_map.keys())
 
     @property
-    def weather_variables_options(self) -> list[str]:
-        """Get list of weather variables to fetch."""
-        return [var for var, include in self.weather_variables.items() if include]
+    def weather_variables_options(self) -> Set[str]:
+        """Get set of weather variables to fetch."""
+        return {var for var, include in self.weather_variables.items() if include}
 
     def ensure_directories(self) -> None:
         """Create required directory structure if it does not exist."""
