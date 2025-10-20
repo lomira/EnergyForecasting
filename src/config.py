@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Set
-from pydantic import Field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings
 
 
@@ -8,6 +8,16 @@ class AppSettings(BaseSettings):
     data_dir: Path = Field(default=Path("data"), alias="DATA_DIR")
     raw_dir: Path = Field(default=Path("raw"), alias="RAW_DIR")
     weather_dir: Path = Field(default=Path("weather"), alias="WEATHER_DIR")
+
+    @computed_field
+    @property
+    def full_raw_dir(self) -> Path:
+        return self.data_dir / self.raw_dir
+
+    @computed_field
+    @property
+    def full_weather_dir(self) -> Path:
+        return self.full_raw_dir / self.weather_dir
 
     supported_file_extensions: list[str] = Field(
         default=[".csv"], alias="SUPPORTED_FILE_EXTENSIONS"
@@ -57,8 +67,8 @@ class AppSettings(BaseSettings):
         """Create required directory structure if it does not exist."""
         list_directories = [
             self.data_dir,
-            self.data_dir / self.raw_dir,
-            self.data_dir / self.raw_dir / self.weather_dir,
+            self.full_raw_dir,
+            self.full_weather_dir,
         ]
         for directory in list_directories:
             directory.mkdir(parents=True, exist_ok=True)
