@@ -157,3 +157,8 @@ tests/fixtures/data/*.csv
 # ignore files in the data folder at the root
 /data/
 /data_test/
+
+# Ignore my test file
+Test_file_gitignore.py*
+
+*.sqlite

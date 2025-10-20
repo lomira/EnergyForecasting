@@ -7,10 +7,13 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.119.0",
     "hypothesis>=6.142.1",
+    "openmeteo-requests>=1.7.3",
     "pandas>=2.3.3",
     "pydantic>=2.12.2",
     "pydantic-settings>=2.11.0",
     "python-multipart>=0.0.20",
+    "requests-cache>=1.2.1",
+    "retry-requests>=2.0.0",
     "streamlit>=1.50.0",
     "uvicorn>=0.37.0",
 ]
