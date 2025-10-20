@@ -147,3 +147,38 @@ class OpenMeteoResponse(BaseModel):
             data=df,
             units=units,
         )
+
+
+class GeocodingAPIRequest(BaseModel):
+    """Represents request parameters for OpenMeteo Geocoding API."""
+
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(..., description="City name to search for")
+    country: Optional[str] = Field(
+        None, description="Filter results by country code (ISO 3166-1 alpha-2, e.g., 'FR')"
+    )
+
+
+class GeocodingAPIResponse(BaseModel):
+    """Represents city information from OpenMeteo Geocoding API."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(description="City name")
+    latitude: float = Field(..., ge=-90.0, le=90.0, description="WGS84 latitude")
+    longitude: float = Field(..., ge=-180.0, le=180.0, description="WGS84 longitude")
+    country: str = Field(description="Country name")
+    timezone: str = Field(description="Timezone identifier")
+    population: Optional[int] = Field(None, description="Population of the city, if available")
+
+    @classmethod
+    def from_api_response(cls, data: dict) -> "GeocodingAPIResponse":
+        """Create GeocodingAPIResponse from API response dictionary."""
+        return cls(
+            name=data.get("name"),
+            latitude=data.get("latitude"),
+            longitude=data.get("longitude"),
+            country=data.get("country"),
+            timezone=data.get("timezone"),
+            population=data.get("population"),
+        )
