@@ -17,4 +17,4 @@ def fetch_openmeteo_data_from_request(client: openmeteo_requests.Client, request
     url = "https://archive-api.open-meteo.com/v1/archive"
     params = request.model_dump(exclude_none=True)
     responses = client.weather_api(url, params=params)
-    return responses[0]  # Return the first reponse (IDK why there are multiple)
+    return responses[0]  # Return the first location (assuming single location request)
