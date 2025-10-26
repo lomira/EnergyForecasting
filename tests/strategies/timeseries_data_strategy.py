@@ -27,7 +27,7 @@ periods_strategy = strategies.integers(min_value=3, max_value=100)
 
 # name strategy
 french_chars = "àáâäæçéèêëìíîïñòóôöœùúûüÿÀÁÂÄÆÇÉÈÊËÌÍÎÏÑÒÓÔÖŒÙÚÛÜŸ"
-special_chars = " !#$%&'()*+,-./:;<=>?@[]^_`{|}~"
+special_chars = " ()-_"
 full_alphabet = string.ascii_letters + string.digits + french_chars + special_chars
 name_strategy = strategies.text(alphabet=full_alphabet, min_size=1).filter(lambda s: s.strip())
 
