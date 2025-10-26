@@ -34,14 +34,40 @@ def _api_post_csv(csv_bytes: str, name: str, granularity: str, timezone: str):
 
 def page_upload():
     st.title("Upload Time Series Data")
-    uploaded_file = st.file_uploader(
-        "Upload a Timeseries as a CSV file (timestamp,value).", type="csv"
-    )
-    name = st.text_input("Series Name", value="my_series")
-    granularity = st.selectbox("Granularity", SETTINGS.granularity_options, index=0)
-    timezone = st.selectbox("Timezone", SETTINGS.allowed_timezones, index=0)
 
-    button_clicked = st.button("Upload", disabled=not uploaded_file)
+    uploaded_file = st.file_uploader(
+        label="Upload a Timeseries.",
+        type="csv",
+        accept_multiple_files=False,
+        key="timeseries_uploader",
+        help="The CSV file should have two columns: timestamp and value.",
+    )
+
+    name = st.text_input(
+        label="Series Name",
+        value="Load Curve",
+        key="timeserie_name",
+        help="A name to identify the time series.",
+    )
+    granularity = st.selectbox(
+        label="Granularity",
+        options=SETTINGS.granularity_options,
+        index=0,
+        key="timeserie_granularity",
+        help="The time interval between data points.",
+    )
+
+    timezone = st.selectbox(
+        label="Timezone",
+        options=SETTINGS.allowed_timezones,
+        index=0,
+        key="timeserie_timezone",
+        help="The timezone of the timestamps in the data.",
+    )
+
+    button_clicked = st.button(
+        label="Upload", key="timeseries_upload_btn", disabled=not uploaded_file
+    )
 
     if uploaded_file and button_clicked:
         try:
