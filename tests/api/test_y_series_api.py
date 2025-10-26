@@ -2,7 +2,7 @@ import pandas as pd
 from hypothesis import given
 import pytest
 from pydantic import ValidationError
-from src.api.data.schemas.y_series_api import APITimeSeriesInput
+from src.api.data.schemas.timeseries_api import APITimeSeriesInput
 from tests.strategies.timeseries_data_strategy import (
     TimeseriesStrategyPayload,
     create_TimeseriesStrategyPayload,
@@ -22,6 +22,7 @@ def test_missing_value_column() -> None:
         """
     payload = create_TimeseriesStrategyPayload(
         csv_text=csv_text,
+        name="test_missing_value_column",
         granularity="daily",
         freq_symbol="D",
         periods=3,
@@ -30,7 +31,12 @@ def test_missing_value_column() -> None:
     with pytest.raises(
         ValueError, match="CSV must contain exactly two columns: timestamp and value.*"
     ):
-        raw_data = (payload["csv_text"], payload["granularity"], payload["timezone"])
+        raw_data = (
+            payload["csv_text"],
+            payload["name"],
+            payload["granularity"],
+            payload["timezone"],
+        )
         APITimeSeriesInput.from_api_data(raw_data)
 
 
@@ -43,6 +49,7 @@ def test_3_column_value_column() -> None:
         """
     payload = create_TimeseriesStrategyPayload(
         csv_text=csv_text,
+        name="test_3_column_value_column",
         granularity="daily",
         freq_symbol="D",
         periods=3,
@@ -51,7 +58,12 @@ def test_3_column_value_column() -> None:
     with pytest.raises(
         ValueError, match="CSV must contain exactly two columns: timestamp and value.*"
     ):
-        raw_data = (payload["csv_text"], payload["granularity"], payload["timezone"])
+        raw_data = (
+            payload["csv_text"],
+            payload["name"],
+            payload["granularity"],
+            payload["timezone"],
+        )
         APITimeSeriesInput.from_api_data(raw_data)
 
 
@@ -64,13 +76,19 @@ def test_non_numeric_value_column() -> None:
         """
     payload = create_TimeseriesStrategyPayload(
         csv_text=csv_text,
+        name="test_non_numeric_value_column",
         granularity="daily",
         freq_symbol="D",
         periods=3,
         timezone="UTC",
     )
     with pytest.raises(ValidationError, match="Data column must be numeric.*"):
-        raw_data = (payload["csv_text"], payload["granularity"], payload["timezone"])
+        raw_data = (
+            payload["csv_text"],
+            payload["name"],
+            payload["granularity"],
+            payload["timezone"],
+        )
         APITimeSeriesInput.from_api_data(raw_data)
 
 
@@ -83,13 +101,19 @@ def test_nan_in_value_column() -> None:
         """
     payload = create_TimeseriesStrategyPayload(
         csv_text=csv_text,
+        name="test_nan_in_value_column",
         granularity="daily",
         freq_symbol="D",
         periods=3,
         timezone="UTC",
     )
     with pytest.raises(ValidationError, match="Value error, Data column must be numeric.*"):
-        raw_data = (payload["csv_text"], payload["granularity"], payload["timezone"])
+        raw_data = (
+            payload["csv_text"],
+            payload["name"],
+            payload["granularity"],
+            payload["timezone"],
+        )
         APITimeSeriesInput.from_api_data(raw_data)
 
 
@@ -102,25 +126,32 @@ def test_non_positive_value_column() -> None:
         """
     payload = create_TimeseriesStrategyPayload(
         csv_text=csv_text,
+        name="test_non_positive_value_column",
         granularity="daily",
         freq_symbol="D",
         periods=3,
         timezone="UTC",
     )
     with pytest.raises(ValidationError, match="Data column contains non-positive values.*"):
-        raw_data = (payload["csv_text"], payload["granularity"], payload["timezone"])
+        raw_data = (
+            payload["csv_text"],
+            payload["name"],
+            payload["granularity"],
+            payload["timezone"],
+        )
         APITimeSeriesInput.from_api_data(raw_data)
 
 
 @given(ts_data_payload=timeseries_data_strategy())
 def test_valid_data(ts_data_payload: TimeseriesStrategyPayload) -> None:
     csv_text = ts_data_payload["csv_text"]
+    name = ts_data_payload["name"]
     expected_granularity = ts_data_payload["granularity"]
     expected_timezone = ts_data_payload["timezone"]
     expected_periods = ts_data_payload["periods"]
     expected_freq_symbol = ts_data_payload["freq_symbol"]
 
-    raw_data = (csv_text, expected_granularity, expected_timezone)
+    raw_data = (csv_text, name, expected_granularity, expected_timezone)
     api_input = APITimeSeriesInput.from_api_data(raw_data)
 
     # Basic type and field validation
@@ -153,11 +184,12 @@ def test_valid_data(ts_data_payload: TimeseriesStrategyPayload) -> None:
 @given(ts_data_payload=invalid_timeseries_data_strategy_missing_row())
 def test_data_generation_with_missing_row(ts_data_payload: TimeseriesStrategyPayload) -> None:
     csv_text = ts_data_payload["csv_text"]
+    name = ts_data_payload["name"]
     nb_obs = ts_data_payload["periods"]
     expected_granularity = ts_data_payload["granularity"]
     expected_timezone = ts_data_payload["timezone"]
 
-    raw_data = (csv_text, expected_granularity, expected_timezone)
+    raw_data = (csv_text, name, expected_granularity, expected_timezone)
 
     # If less than 3 obs then it should raaise a value error
     if nb_obs < 3:
@@ -178,10 +210,11 @@ def test_data_generation_with_duplicate_timestamp(
     ts_data_payload: TimeseriesStrategyPayload,
 ) -> None:
     csv_text = ts_data_payload["csv_text"]
+    name = ts_data_payload["name"]
     expected_granularity = ts_data_payload["granularity"]
     expected_timezone = ts_data_payload["timezone"]
 
-    raw_data = (csv_text, expected_granularity, expected_timezone)
+    raw_data = (csv_text, name, expected_granularity, expected_timezone)
 
     with pytest.raises(
         ValidationError,
@@ -195,10 +228,11 @@ def test_data_generation_with_wrong_timezone(
     ts_data_payload: TimeseriesStrategyPayload,
 ) -> None:
     csv_text = ts_data_payload["csv_text"]
+    name = ts_data_payload["name"]
     expected_granularity = ts_data_payload["granularity"]
     expected_timezone = ts_data_payload["timezone"]
 
-    raw_data = (csv_text, expected_granularity, expected_timezone)
+    raw_data = (csv_text, name, expected_granularity, expected_timezone)
 
     with pytest.raises(
         ValueError,  # Value Error raised before Pydantic ValidationError
@@ -214,13 +248,34 @@ def test_unsupported_granularity() -> None:
         2023-01-02 00:00:00+00:00, 20
         2023-01-03 00:00:00+00:00, 30
         """
+    name = "test_unsupported_granularity"
     granularity = "unsupported_granularity"
     timezone = "UTC"
 
-    raw_data = (csv_text, granularity, timezone)
+    raw_data = (csv_text, name, granularity, timezone)
 
     with pytest.raises(
         ValueError,
         match=f"Granularity '{granularity}' is not supported.*",
+    ):
+        APITimeSeriesInput.from_api_data(raw_data)
+
+
+def test_empty_name() -> None:
+    csv_text = """
+        timestamp, value
+        2023-01-01 00:00:00+00:00, 10
+        2023-01-02 00:00:00+00:00, 20
+        2023-01-03 00:00:00+00:00, 30
+        """
+    name = "   "  # Empty after stripping
+    granularity = "daily"
+    timezone = "UTC"
+
+    raw_data = (csv_text, name, granularity, timezone)
+
+    with pytest.raises(
+        ValueError,
+        match="Name must be a non-empty string.*",
     ):
         APITimeSeriesInput.from_api_data(raw_data)

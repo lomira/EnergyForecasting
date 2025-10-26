@@ -4,7 +4,7 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from src.config import get_settings
-from src.data.schemas.y_series import TimeSeriesData
+from src.data.schemas.timeseries import TimeSeriesData
 
 SETTINGS = get_settings()
 ALLOWED_TIMEZONES = SETTINGS.allowed_timezones
@@ -17,13 +17,14 @@ class APITimeSeriesInput(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     dataframe: pd.DataFrame
+    name: str
     granularity: str
     timezone: str
 
     @classmethod
     def from_api_data(cls, raw_data: tuple) -> "APITimeSeriesInput":
         """Parse raw tuple (csv_text, granularity, timezone) into validated APITimeSeriesInput."""
-        raw_df_text, raw_granularity, raw_tz = raw_data
+        raw_df_text, raw_df_name, raw_granularity, raw_tz = raw_data
 
         # Validate timezone early
         if raw_tz not in ALLOWED_TIMEZONES:
@@ -65,7 +66,13 @@ class APITimeSeriesInput(BaseModel):
         if value_col.lower() != "value":
             df.rename(columns={value_col: "value"}, inplace=True)
 
-        return cls(dataframe=df, granularity=raw_granularity, timezone=raw_tz)
+        return cls(dataframe=df, name=raw_df_name, granularity=raw_granularity, timezone=raw_tz)
+
+    @field_validator("name")
+    def validate_name(cls, v: str, values) -> str:
+        if not v or v.strip() == "":
+            raise ValueError("Name must be a non-empty string.")
+        return v
 
     @field_validator("granularity")
     def validate_granularity(cls, v: str) -> str:
@@ -119,4 +126,6 @@ class APITimeSeriesInput(BaseModel):
 
     def to_timeseries(self) -> TimeSeriesData:
         """Convert validated API input into domain TimeSeriesData."""
-        return TimeSeriesData(dataframe=self.dataframe, granularity=self.granularity)
+        return TimeSeriesData(
+            dataframe=self.dataframe, name=self.name, granularity=self.granularity
+        )

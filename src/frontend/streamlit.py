@@ -13,15 +13,16 @@ from src.config import get_settings  # noqa:E402
 SETTINGS = get_settings()
 
 
-def _api_post_csv(csv_bytes: str, granularity: str, timezone: str):
+def _api_post_csv(csv_bytes: str, name: str, granularity: str, timezone: str):
     """Helper to post CSV data to API and get response."""
 
-    api_url = f"{SETTINGS.api_base}/ingest/y-series-csv"
+    api_url = f"{SETTINGS.api_base}/ingest/timeseries-csv"
 
     files = {
         "file": ("data.csv", csv_bytes, "text/csv"),
     }
     data = {
+        "name": name,
         "granularity": granularity,
         "timezone": timezone,
     }
@@ -33,16 +34,19 @@ def _api_post_csv(csv_bytes: str, granularity: str, timezone: str):
 
 def page_upload():
     st.title("Upload Time Series Data")
-    uploaded_file = st.file_uploader("Upload a consumption CSV file (timestamp,value).", type="csv")
+    uploaded_file = st.file_uploader(
+        "Upload a Timeseries as a CSV file (timestamp,value).", type="csv"
+    )
+    name = st.text_input("Series Name", value="my_series")
     granularity = st.selectbox("Granularity", SETTINGS.granularity_options, index=0)
     timezone = st.selectbox("Timezone", SETTINGS.allowed_timezones, index=0)
 
-    button_clicked = st.button("Upload Consumption", disabled=not uploaded_file)
+    button_clicked = st.button("Upload", disabled=not uploaded_file)
 
     if uploaded_file and button_clicked:
         try:
             csv_text = uploaded_file.getvalue()
-            api_response = _api_post_csv(csv_text, granularity, timezone)
+            api_response = _api_post_csv(csv_text, name, granularity, timezone)
             st.success("File uploaded and processed successfully!")
             st.json(api_response)
         except Exception as e:

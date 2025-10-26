@@ -19,6 +19,14 @@ class TimeSeriesData(BaseModel):
 
     dataframe: pd.DataFrame
     granularity: str
+    name: str
+
+    @field_validator("name")
+    def validate_name(cls, v: str, values) -> str:
+        """Esnure name is not empty string"""
+        if not v or v.strip() == "":
+            raise ValueError("Name must be a non-empty string.")
+        return v
 
     @field_validator("dataframe")
     def validate_dataframe_schema_content(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -49,10 +57,6 @@ class TimeSeriesData(BaseModel):
 
         if value_series.isnull().any():
             raise ValueError("The data column contains null/NaN values.")
-
-        # This single check is extremely fast for millions of rows
-        if (value_series <= 0).any():
-            raise ValueError("The data column contains non-positive values.")
 
         return df
 
@@ -96,7 +100,7 @@ class TimeSeriesData(BaseModel):
         from src.config import get_settings
 
         settings = get_settings()
-        file_path = settings.data_dir / settings.raw_dir / f"y_{self.granularity}.csv"
+        file_path = settings.data_dir / settings.raw_dir / f"{self.name}_{self.granularity}.csv"
         # ensure directory exists
         file_path.parent.mkdir(parents=True, exist_ok=True)
         # get CSV text

@@ -24,6 +24,9 @@ timezone_strategy_out = strategies.sampled_from(SETTINGS.allowed_timezones)
 # Periods strategy
 periods_strategy = strategies.integers(min_value=3, max_value=100)
 
+# name strategy
+name_strategy = strategies.text(min_size=1).filter(lambda s: s.strip())
+
 # Frequency strategy
 freq_map = SETTINGS.granularity_freq_map  # maps granularity -> freq symbol
 # Invert mapping to derive granularity from freq symbol
@@ -44,6 +47,7 @@ value_element_strategy = strategies.floats(
 
 def create_TimeseriesStrategyPayload(
     csv_text: str,
+    name: str,
     granularity: str,
     timezone: str,
     periods: int,
@@ -52,6 +56,7 @@ def create_TimeseriesStrategyPayload(
     """Helper to create TimeseriesStrategyPayload instances."""
     return TimeseriesStrategyPayload(
         csv_text=csv_text,
+        name=name,
         granularity=granularity,
         timezone=timezone,
         periods=periods,
@@ -62,6 +67,7 @@ def create_TimeseriesStrategyPayload(
 @strategies.composite
 def timeseries_data_strategy(draw) -> TimeseriesStrategyPayload:
     """Generate a realistic timeseries payload for testing API input."""
+    name = draw(name_strategy)
     # Draw basic parameters
     periods = draw(periods_strategy)
     freq_symbol = draw(frequency_strategy)
@@ -98,6 +104,7 @@ def timeseries_data_strategy(draw) -> TimeseriesStrategyPayload:
 
     return TimeseriesStrategyPayload(
         csv_text=csv_text,
+        name=name,
         granularity=granularity,
         timezone=timezone_out,
         periods=periods,
@@ -120,6 +127,7 @@ def invalid_timeseries_data_strategy_missing_row(draw) -> TimeseriesStrategyPayl
 
     return TimeseriesStrategyPayload(
         csv_text=invalid_csv_text,
+        name=valid_payload["name"],
         granularity=valid_payload["granularity"],
         timezone=valid_payload["timezone"],
         periods=invalid_periods,
@@ -145,6 +153,7 @@ def invalid_timeseries_data_strategy_duplicatetime(draw) -> TimeseriesStrategyPa
 
     return TimeseriesStrategyPayload(
         csv_text=invalid_csv_text,
+        name=valid_payload["name"],
         granularity=valid_payload["granularity"],
         timezone=valid_payload["timezone"],
         periods=invalid_periods,
@@ -167,6 +176,7 @@ def invalid_timeseries_data_strategy_wrong_timezone(draw) -> TimeseriesStrategyP
 
     return TimeseriesStrategyPayload(
         csv_text=invalid_csv_text,
+        name=valid_payload["name"],
         granularity=valid_payload["granularity"],
         timezone=invalid_timezone,
         periods=valid_payload["periods"],

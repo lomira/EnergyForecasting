@@ -3,7 +3,7 @@ import io
 import pandas as pd
 from fastapi.testclient import TestClient
 from src.api.main import app
-from src.api.data.schemas.y_series_api import GRANULARITY_FREQ_MAP, ALLOWED_TIMEZONES
+from src.api.data.schemas.timeseries_api import GRANULARITY_FREQ_MAP, ALLOWED_TIMEZONES
 
 from src.config import get_settings
 
@@ -12,7 +12,8 @@ client = TestClient(app)
 SETTINGS = get_settings()
 
 
-def test_upload_y_series_csv_endpoint_returns_csv_and_count():
+def test_upload_timeseries_csv_endpoint_returns_csv_and_count():
+    name = "abc_series"
     granularity = next(iter(GRANULARITY_FREQ_MAP.keys()))
     timezone = next(iter(ALLOWED_TIMEZONES))
 
@@ -28,6 +29,7 @@ def test_upload_y_series_csv_endpoint_returns_csv_and_count():
         "file": ("y.csv", io.BytesIO(file_bytes), "text/csv"),
     }
     data = {
+        "name": name,
         "granularity": granularity,
         "timezone": timezone,
     }
@@ -40,11 +42,11 @@ def test_upload_y_series_csv_endpoint_returns_csv_and_count():
     # Ensure clean test target directory and remove any pre-existing file
     target_dir = Path(os.environ["DATA_DIR"]) / SETTINGS.raw_dir
     target_dir.mkdir(parents=True, exist_ok=True)
-    target_file = target_dir / f"y_{granularity}.csv"
+    target_file = target_dir / f"{name}_{granularity}.csv"
     if target_file.exists():
         target_file.unlink()
 
-    resp = client.post("/ingest/y-series-csv", files=files, data=data)
+    resp = client.post("/ingest/timeseries-csv", files=files, data=data)
     assert resp.status_code == 200, resp.text
 
     payload = resp.json()
