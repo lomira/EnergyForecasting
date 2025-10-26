@@ -36,7 +36,7 @@ def page_upload():
     st.title("Upload Time Series Data")
 
     uploaded_file = st.file_uploader(
-        label="Upload a Timeseries.",
+        label="Upload a Timeseries",
         type="csv",
         accept_multiple_files=False,
         key="timeseries_uploader",
@@ -47,14 +47,14 @@ def page_upload():
         label="Series Name",
         value="Load Curve",
         key="timeserie_name",
-        help="A name to identify the time series.",
+        help="A name to identify the time series",
     )
     granularity = st.selectbox(
         label="Granularity",
         options=SETTINGS.granularity_options,
         index=0,
         key="timeserie_granularity",
-        help="The time interval between data points.",
+        help="The time interval between data points",
     )
 
     timezone = st.selectbox(
@@ -62,7 +62,7 @@ def page_upload():
         options=SETTINGS.allowed_timezones,
         index=0,
         key="timeserie_timezone",
-        help="The timezone of the timestamps in the data.",
+        help="The timezone of the timestamps in the data",
     )
 
     button_clicked = st.button(
