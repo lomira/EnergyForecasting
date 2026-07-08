@@ -1,3 +1,8 @@
+[build-system]
+requires = ["uv_build>=0.11.20,<0.12.0"]
+build-backend = "uv_build"
+
+
 [project]
 name = "engine"
 version = "0.1.0"
@@ -7,8 +12,17 @@ authors = [
     { name = "lomi", email = "lomir@.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "torch>=2.12.1",
+    "numpy>=2.5.0"
+]
 
-[build-system]
-requires = ["uv_build>=0.11.20,<0.12.0"]
-build-backend = "uv_build"
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu132" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+explicit = true

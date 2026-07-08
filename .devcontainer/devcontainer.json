@@ -1,0 +1,25 @@
+{
+  "name": "CUDA Python Devcontainer",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "mounts": [
+    "source=uv-cache-volume,target=/root/.cache/uv,type=volume"
+  ],
+  "runArgs": [
+    "--gpus=all"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "tamasfe.even-better-toml",
+        "mechatroner.rainbow-csv"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${getWorkspaceFolder}/.venv/bin/python"
+      }
+    }
+  },
+  "postCreateCommand": "uv sync"
+}
