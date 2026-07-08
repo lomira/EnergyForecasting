@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from typing import get_args
 
@@ -5,13 +6,21 @@ import duckdb
 import pandera as pa
 from engine.config import settings
 from engine.data_model.load_model import LoadSchema
-from engine.data_model.type_mapping import TYPE_MAPPING
 
 
 def create_table_from_model(
     con: duckdb.DuckDBPyConnection, model: type[pa.SchemaModel], table_name: str
 ):
     """Generates and executes a CREATE TABLE statement dynamically from a Pandera SchemaModel."""
+
+    TYPE_MAPPING = {
+        int: "INTEGER",
+        str: "VARCHAR",
+        datetime: "TIMESTAMP",
+        float: "DOUBLE",
+        bool: "BOOLEAN",
+    }
+
     columns = []
 
     for field_name, field_type in model.__annotations__.items():
