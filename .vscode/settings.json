@@ -11,7 +11,7 @@
             "alias": "energy_forecast",
             "type": "file",
             "path": "/workspaces/EnergyForecasting/data/db/energy_forecast.duckdb",
-            "readOnly": true,
+            "readOnly": false,
             "attached": false
         }
     ],

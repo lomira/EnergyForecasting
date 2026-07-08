@@ -2,9 +2,10 @@
 
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 from engine.data_model.load_model import LoadSchema
-from engine.database.manage_conn import add_rows, duckdb_conn
+from engine.database.manage_conn import add_rows
 
 
 def format_load_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -36,5 +37,5 @@ def add_load_excel_to_db(file_path: Path, sheet_name: str, db_path: Path) -> Non
     excel_file = pd.read_excel(file_path, sheet_name="Feuil1", engine="openpyxl")
     tidy_load_data = format_load_data(excel_file)
     tidy_load_data = LoadSchema.validate(tidy_load_data)
-    with duckdb_conn(str(db_path), read_only=False) as con:
+    with duckdb.connect(str(db_path)) as con:
         add_rows(con, "load_time_series", tidy_load_data)
