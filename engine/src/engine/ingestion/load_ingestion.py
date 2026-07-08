@@ -7,12 +7,6 @@ from engine.data_model.load_model import LoadSchema
 from engine.database.manage_conn import add_rows, duckdb_conn
 
 
-def load_excel(file_path: Path, sheet_name: str) -> pd.DataFrame:
-    """Load the Excel file into a DataFrame."""
-    df = pd.read_excel(file_path, sheet_name=sheet_name, engine="openpyxl")
-    return df
-
-
 def format_load_data(df: pd.DataFrame) -> pd.DataFrame:
     """Read and format the load data from the Excel file."""
 
@@ -37,19 +31,9 @@ def format_load_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def check_load_data(df: pd.DataFrame, model: LoadSchema) -> bool:
-    """Check the load data for any issues."""
-
-    if df.isnull().values.any():
-        raise ValueError("Load data contains missing values.")
-
-    if df["datetime"].is_monotonic_increasing:
-        raise ValueError("Order and .")
-
-
 def add_load_excel_to_db(file_path: Path, sheet_name: str, db_path: Path) -> None:
     """Add the load excel to the DuckDB database."""
-    excel_file = load_excel(file_path, sheet_name="Feuil1")
+    excel_file = pd.read_excel(file_path, sheet_name="Feuil1", engine="openpyxl")
     tidy_load_data = format_load_data(excel_file)
     tidy_load_data = LoadSchema.validate(tidy_load_data)
     with duckdb_conn(str(db_path), read_only=False) as con:
