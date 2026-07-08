@@ -14,10 +14,19 @@
       "extensions": [
         "ms-python.python",
         "tamasfe.even-better-toml",
-        "mechatroner.rainbow-csv"
+        "mechatroner.rainbow-csv",
+        "charliermarsh.ruff"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "${getWorkspaceFolder}/.venv/bin/python"
+        "[python]": {
+          "defaultInterpreterPath": "${getWorkspaceFolder}/.venv/bin/python",
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        }
       }
     }
   },

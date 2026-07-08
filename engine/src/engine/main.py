@@ -1,9 +1,5 @@
-import torch 
-import numpy as np
-
-def main():
-    print(torch.cuda.is_available())
-
+from engine.database.initialise import create_database
 
 if __name__ == "__main__":
-    main()
+    created_path = create_database()
+    print(f"Created DuckDB database at {created_path}")
