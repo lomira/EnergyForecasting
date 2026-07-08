@@ -4,7 +4,7 @@ from typing import get_args
 
 import duckdb
 import pandera as pa
-from engine.config import settings
+from engine.config.config import settings
 from engine.data_model.load_model import LoadSchema
 
 
