@@ -15,7 +15,8 @@
         "ms-python.python",
         "tamasfe.even-better-toml",
         "mechatroner.rainbow-csv",
-        "charliermarsh.ruff"
+        "charliermarsh.ruff",
+        "chuckjonas.duckdb"
       ],
       "settings": {
         "[python]": {
