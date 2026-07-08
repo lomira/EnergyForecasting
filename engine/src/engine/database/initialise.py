@@ -36,9 +36,9 @@ def create_table_from_model(
     con.execute(schema_sql)
 
 
-def create_database(db_path: Path | None = None) -> Path:
+def create_database() -> Path:
     """Create a DuckDB database file and initialize the expected table."""
-    database_path = Path(db_path or settings.duckdb_path).resolve()
+    database_path = settings.duckdb_path.resolve()
     database_path.parent.mkdir(parents=True, exist_ok=True)
 
     with duckdb.connect(str(database_path), read_only=False) as con:
