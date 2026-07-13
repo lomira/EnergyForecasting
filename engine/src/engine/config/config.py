@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Dict
 
-from pydantic import BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -18,8 +18,18 @@ def _resolve_path(v: str | Path) -> Path:
 AbsPath = Annotated[Path, BeforeValidator(_resolve_path)]
 
 
+class Ville(BaseModel):
+    name: str
+    region: str
+    lat: float
+    lon: float
+    weight: int
+
+
 class Settings(BaseSettings):
     """Engine application settings."""
+
+    ville: Dict[int, Ville] = Field(default_factory=dict)
 
     model_config = SettingsConfigDict(
         env_file=(
@@ -28,6 +38,7 @@ class Settings(BaseSettings):
             SUBPACKAGE_ROOT / "weather.env",
         ),
         env_file_encoding="utf-8",
+        env_nested_delimiter="__",
         extra="ignore",
         case_sensitive=False,
     )
@@ -39,6 +50,10 @@ class Settings(BaseSettings):
     db_root: AbsPath
 
     duckdb_filename: str
+    ville: dict[str, Ville] = Field(default_factory=dict)
+    cache_meteo: str | None = None
+    weather_metrics: list[str] | None = None
+    weather_metrics_previous_days: int | None = None
 
     duckdb_path_override: AbsPath | None = Field(
         default=None, validation_alias="DUCKDB_PATH"
