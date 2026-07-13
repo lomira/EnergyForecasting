@@ -6,6 +6,7 @@ import duckdb
 import pandera as pa
 from engine.config.config import settings
 from engine.data_model.load_model import LoadSchema
+from engine.data_model.weather_model import build_weather_schema
 
 
 def create_table_from_model(
@@ -43,5 +44,10 @@ def create_database() -> Path:
 
     with duckdb.connect(str(database_path), read_only=False) as con:
         create_table_from_model(con, LoadSchema, "load_time_series")
+        weather_schema = build_weather_schema(
+            weather_metrics=settings.weather_metrics,
+            previous_days=settings.weather_metrics_previous_days,
+        )
+        create_table_from_model(con, weather_schema, "weather")
 
     return database_path

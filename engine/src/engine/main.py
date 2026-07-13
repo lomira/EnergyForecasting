@@ -1,5 +1,6 @@
 from engine.database.initialise import create_database
 from engine.ingestion.load_ingestion import add_load_excel_to_db
+from engine.ingestion.weather_ingestion import get_weather_data
 
 if __name__ == "__main__":
     created_path = create_database()
@@ -10,3 +11,5 @@ if __name__ == "__main__":
         sheet_name="Feuil1",
         db_path=created_path,
     )
+
+    get_weather_data()
