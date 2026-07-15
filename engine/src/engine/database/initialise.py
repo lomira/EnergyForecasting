@@ -1,8 +1,8 @@
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import get_args
 
-import duckdb
 import pandera as pa
 from engine.config.config import settings
 from engine.data_model.load_model import LoadSchema
@@ -10,16 +10,16 @@ from engine.data_model.weather_model import build_weather_schema
 
 
 def create_table_from_model(
-    con: duckdb.DuckDBPyConnection, model: type[pa.SchemaModel], table_name: str
+    con: sqlite3.Connection, model: type[pa.SchemaModel], table_name: str
 ):
     """Generates and executes a CREATE TABLE statement dynamically from a Pandera SchemaModel."""
 
     TYPE_MAPPING = {
         int: "INTEGER",
-        str: "VARCHAR",
-        datetime: "TIMESTAMP",
-        float: "DOUBLE",
-        bool: "BOOLEAN",
+        str: "TEXT",
+        datetime: "TEXT",
+        float: "REAL",
+        bool: "INTEGER",
     }
 
     columns = []
@@ -38,11 +38,11 @@ def create_table_from_model(
 
 
 def create_database() -> Path:
-    """Create a DuckDB database file and initialize the expected table."""
-    database_path = settings.duckdb_path.resolve()
+    """Create a SQLite database file and initialize the expected tables."""
+    database_path = settings.sqlite_path.resolve()
     database_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with duckdb.connect(str(database_path), read_only=False) as con:
+    with sqlite3.connect(str(database_path)) as con:
         create_table_from_model(con, LoadSchema, "load_time_series")
         weather_schema = build_weather_schema(
             weather_metrics=settings.weather_metrics,

@@ -1,4 +1,5 @@
-import duckdb
+import sqlite3
+
 import openmeteo_requests
 import pandas as pd
 import requests_cache
@@ -23,10 +24,7 @@ def get_weather_data() -> None:
         previous_days=settings.weather_metrics_previous_days,
     )
 
-    # 3. Process weather data per city
-    list_df = []
-    total_weight = sum(ville.weight for ville in settings.ville.values())
-
+    # Process weather data per city
     for _, ville in settings.ville.items():
         params = {
             "latitude": ville.lat,
@@ -61,7 +59,7 @@ def get_weather_data() -> None:
         )
         hourly_dataframe["city"] = ville.name
 
-        with duckdb.connect(str(settings.duckdb_path)) as con:
+        with sqlite3.connect(str(settings.sqlite_path)) as con:
             add_rows(con, "weather", hourly_dataframe)
 
         print(f"Processed hourly data for {ville.name}")
