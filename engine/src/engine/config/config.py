@@ -49,20 +49,21 @@ class Settings(BaseSettings):
     raw_excel_root: AbsPath
     db_root: AbsPath
 
-    duckdb_filename: str
+    sqlite_filename: str = Field(default="energy_forecast.sqlite3")
     ville: dict[str, Ville] = Field(default_factory=dict)
     cache_meteo: str | None = None
     weather_metrics: list[str] | None = None
     weather_metrics_previous_days: int | None = None
 
-    duckdb_path_override: AbsPath | None = Field(
-        default=None, validation_alias="DUCKDB_PATH"
-    )
+    @property
+    def sqlite_path(self) -> Path:
+        """Location of the SQLite database file."""
+        return self.db_root / self.sqlite_filename
 
     @property
-    def duckdb_path(self) -> Path:
-        """Location of the DuckDB database file."""
-        return self.duckdb_path_override or (self.db_root / self.duckdb_filename)
+    def database_path(self) -> Path:
+        """Location of the application database file."""
+        return self.sqlite_path
 
     def ensure_directories(self) -> None:
         """Create the directories if they do not exist."""

@@ -1,15 +1,17 @@
 import sqlite3
+from datetime import datetime
 
 import openmeteo_requests
 import pandas as pd
 import requests_cache
+from retry_requests import retry
+
 from engine.config.config import settings
 from engine.data_model.weather_model import build_weather_column_names
 from engine.database.manage_conn import add_rows
-from retry_requests import retry
 
 
-def get_weather_data() -> None:
+def get_weather_data(from_date: datetime, to_date: datetime) -> None:
     """Get the weather data from the Open-Meteo API and save it to a CSV file."""
 
     cache_session = requests_cache.CachedSession(settings.cache_meteo, expire_after=-1)
@@ -30,8 +32,8 @@ def get_weather_data() -> None:
             "latitude": ville.lat,
             "longitude": ville.lon,
             "hourly": hourly_requests,
-            "start_date": "2019-01-01",
-            "end_date": "2020-02-01",
+            "start_date": from_date.strftime("%Y-%m-%d"),
+            "end_date": to_date.strftime("%Y-%m-%d"),
         }
 
         responses = openmeteo.weather_api(url, params=params)

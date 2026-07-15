@@ -4,8 +4,9 @@ import sqlite3
 from pathlib import Path
 
 import pandas as pd
+
 from engine.data_model.load_model import LoadSchema
-from engine.database.manage_conn import add_rows
+from engine.database.manage_conn import add_rows, get_start_end_dates
 
 
 def format_load_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -39,3 +40,14 @@ def add_load_excel_to_db(file_path: Path, sheet_name: str, db_path: Path) -> Non
     tidy_load_data = LoadSchema.validate(tidy_load_data)
     with sqlite3.connect(str(db_path)) as con:
         add_rows(con, "load_time_series", tidy_load_data)
+
+
+def get_load_start_end_dates(db_path: Path) -> tuple:
+    with sqlite3.connect(str(db_path)) as con:
+        start, end = get_start_end_dates(con, "load_time_series")
+    try:
+        start = pd.to_datetime(start)
+        end = pd.to_datetime(end)
+    except Exception as e:
+        raise ValueError(f"Error converting start or end date to datetime: {e}")
+    return start, end
