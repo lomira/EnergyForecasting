@@ -1,10 +1,12 @@
-import duckdb
+import sqlite3
+
+import pandas as pd
 
 
-def add_rows(con: duckdb.DuckDBPyConnection, table_name: str, df) -> None:
-    """Add rows to a DuckDB table."""
-    desc = con.execute(f"DESCRIBE {table_name}").fetchall()
-    col_order = [col[0] for col in desc if col[0] is not None]
+def add_rows(con: sqlite3.Connection, table_name: str, df: pd.DataFrame) -> None:
+    """Add rows to a SQLite table."""
+    desc = con.execute(f"PRAGMA table_info({table_name})").fetchall()
+    col_order = [col[1] for col in desc if col[1] is not None]
     missing = [c for c in col_order if c not in df.columns]
 
     if missing:
@@ -12,6 +14,5 @@ def add_rows(con: duckdb.DuckDBPyConnection, table_name: str, df) -> None:
             f"DataFrame is missing required columns for table '{table_name}': {missing}"
         )
 
-    # Reorder DataFrame columns to match table column order
     df = df.reindex(columns=col_order)
-    con.execute(f"INSERT INTO {table_name} SELECT * FROM df")
+    df.to_sql(table_name, con, if_exists="append", index=False)

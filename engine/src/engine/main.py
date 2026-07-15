@@ -4,7 +4,7 @@ from engine.ingestion.weather_ingestion import get_weather_data
 
 if __name__ == "__main__":
     created_path = create_database()
-    print(f"Created DuckDB database at {created_path}")
+    print(f"Created SQLite database at {created_path}")
 
     add_load_excel_to_db(
         file_path="data/raw/excel/BDD_E.xlsx",
