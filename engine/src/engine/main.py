@@ -1,6 +1,11 @@
+from datetime import datetime
+
 from engine.database.initialise import create_database
-from engine.ingestion.load_ingestion import add_load_excel_to_db
-from engine.ingestion.weather_ingestion import get_weather_data
+from engine.ingestion.get_all_covariates import get_all_covariates
+from engine.ingestion.load_ingestion import (
+    add_load_excel_to_db,
+    get_load_start_end_dates,
+)
 
 if __name__ == "__main__":
     created_path = create_database()
@@ -12,4 +17,7 @@ if __name__ == "__main__":
         db_path=created_path,
     )
 
-    get_weather_data()
+    start_date, end_date = get_load_start_end_dates(created_path)
+    start_date = datetime(2016, 1, 1)
+
+    print(get_all_covariates(start_date, end_date))
