@@ -3,6 +3,7 @@ from datetime import datetime
 import holidays
 import pandas as pd
 
+from engine.logging_config import logger
 from engine.models import Holiday
 
 
@@ -33,4 +34,7 @@ def get_holidays(from_date: datetime, to_date: datetime) -> None:
         update_conflicts=True,
         unique_fields=["datetime"],
         update_fields=["is_holiday"],
+    )
+    logger.info(
+        f"Stored {len(observations):,.0f} holiday flags between {from_date} and {to_date}"
     )
