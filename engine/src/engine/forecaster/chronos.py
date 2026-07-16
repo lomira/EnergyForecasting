@@ -19,7 +19,7 @@ class ChronosModel(BaseEnergyModel):
 
     def fit(self, target_df: pd.DataFrame):
         self.model = Chronos2Pipeline.from_pretrained(
-            "amazon/chronos-2", device_map="cuda"
+            "data/artefacts/chronos", device_map="cuda"
         )
         self.context_df = target_df.copy()
         return self
