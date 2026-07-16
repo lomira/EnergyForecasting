@@ -12,7 +12,7 @@ from engine.ingestion.weather_ingestion import get_weather_data
 
 if __name__ == "__main__":
     # remove the database to ensure
-    file_path = settings.sqlite_path.resolve()
+    file_path = settings.database_path.resolve()
     file_path.unlink(missing_ok=True)
 
     created_path = create_database()

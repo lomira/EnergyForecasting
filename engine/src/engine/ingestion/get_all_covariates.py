@@ -8,7 +8,7 @@ from engine.database.manage_conn import read_table_as_df
 
 
 def get_all_covariates(from_date: datetime, to_date: datetime) -> pd.DataFrame:
-    with sqlite3.connect(str(settings.sqlite_path)) as con:
+    with sqlite3.connect(str(settings.database_path)) as con:
         weather_df = read_table_as_df(
             con,
             settings.tables.weather,

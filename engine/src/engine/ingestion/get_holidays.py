@@ -24,5 +24,5 @@ def get_holidays(from_date: datetime, to_date: datetime) -> None:
     # put the index as datetime
     holidays_df = holidays_df.rename_axis("datetime").reset_index()
 
-    with sqlite3.connect(str(settings.sqlite_path)) as con:
+    with sqlite3.connect(str(settings.database_path)) as con:
         add_rows(con, "holidays", holidays_df)

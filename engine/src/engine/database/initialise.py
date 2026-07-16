@@ -40,7 +40,7 @@ def create_table_from_model(
 
 def create_database() -> Path:
     """Create a SQLite database file and initialize the expected tables."""
-    database_path = settings.sqlite_path.resolve()
+    database_path = settings.database_path.resolve()
     database_path.parent.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(str(database_path)) as con:

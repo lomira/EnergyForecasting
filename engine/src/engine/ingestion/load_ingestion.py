@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from engine.config.config import settings
 from engine.data_model.load_model import LoadSchema
 from engine.database.manage_conn import add_rows, get_start_end_dates
 
@@ -39,12 +40,12 @@ def add_load_excel_to_db(file_path: Path, sheet_name: str, db_path: Path) -> Non
     tidy_load_data = format_load_data(excel_file)
     tidy_load_data = LoadSchema.validate(tidy_load_data)
     with sqlite3.connect(str(db_path)) as con:
-        add_rows(con, "load_time_series", tidy_load_data)
+        add_rows(con, settings.tables.load, tidy_load_data)
 
 
 def get_load_start_end_dates(db_path: Path) -> tuple:
     with sqlite3.connect(str(db_path)) as con:
-        start, end = get_start_end_dates(con, "load_time_series")
+        start, end = get_start_end_dates(con, settings.tables.load)
     try:
         start = pd.to_datetime(start)
         end = pd.to_datetime(end)
