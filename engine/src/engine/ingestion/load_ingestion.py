@@ -1,13 +1,12 @@
-"""Simple ingestion module for loading the load data into the database."""
+"""Simple ingestion module for loading the load data Excel file into the database."""
 
-import sqlite3
 from pathlib import Path
 
 import pandas as pd
+from django.db.models import Max as models_max
+from django.db.models import Min as models_min
 
-from engine.config.config import settings
-from engine.data_model.load_model import LoadSchema
-from engine.database.manage_conn import add_rows, get_start_end_dates
+from engine.models import LoadObservation
 
 
 def format_load_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -28,6 +27,11 @@ def format_load_data(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
+    if not tidy["datetime"].is_monotonic_increasing:
+        raise ValueError("Load timestamps must be chronological")
+    if tidy["load_MW"].lt(0).any():
+        raise ValueError("Load values must be non-negative")
+
     return tidy
 
 
@@ -35,13 +39,22 @@ def add_load_excel_to_db(file_path: Path, sheet_name: str, db_path: Path) -> Non
     """Add the load excel to the SQLite database."""
     excel_file = pd.read_excel(file_path, sheet_name=sheet_name, engine="openpyxl")
     tidy_load_data = format_load_data(excel_file)
-    tidy_load_data = LoadSchema.validate(tidy_load_data)
-    with sqlite3.connect(str(db_path)) as con:
-        add_rows(con, settings.tables.load, tidy_load_data)
+
+    # Upsert into the Django ORM model
+    observations = [
+        LoadObservation(datetime=row["datetime"], load_mw=row["load_MW"])
+        for row in tidy_load_data.to_dict("records")
+    ]
+    LoadObservation.objects.bulk_create(
+        observations,
+        update_conflicts=True,
+        unique_fields=["datetime"],
+        update_fields=["load_mw"],
+    )
 
 
 def get_load_start_end_dates(db_path: Path) -> tuple:
-    with sqlite3.connect(str(db_path)) as con:
-        start, end = get_start_end_dates(con, settings.tables.load)
-    start, end = pd.to_datetime(start), pd.to_datetime(end)
-    return start, end
+    agg = LoadObservation.objects.aggregate(
+        start=models_min("datetime"), end=models_max("datetime")
+    )
+    return agg["start"], agg["end"]

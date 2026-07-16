@@ -1,25 +1,34 @@
-import sqlite3
 from datetime import datetime
 
 import holidays
 import pandas as pd
 
-from engine.config.config import settings
-from engine.database.manage_conn import add_rows
+from engine.models import Holiday
 
 
-# Fetch Côte d'Ivoire holidays for a certain time
 def get_holidays(from_date: datetime, to_date: datetime) -> None:
-    ci_holidays = holidays.country_holidays(
-        "CI", years=range(from_date.year, to_date.year + 1)
+    """Insert the public holidays for a timerange into the database"""
+    dz_holidays = holidays.country_holidays(
+        "DZ", years=range(from_date.year, to_date.year + 1)
     )
 
     date_range = pd.date_range(start=from_date, end=to_date, freq="h")
     holidays_df = pd.DataFrame(index=date_range)
 
-    holidays_df["holidays"] = holidays_df.index.date.isin(ci_holidays).astype(int)
+    # ci_holidays maps date -> name; build a DatetimeIndex of holiday dates
+    # and test membership against the (hourly) frame index.
+    holiday_dates = pd.to_datetime(list(dz_holidays.keys()))
+    holidays_df["is_holiday"] = holidays_df.index.isin(holiday_dates).astype(int)
     # put the index as datetime
     holidays_df = holidays_df.rename_axis("datetime").reset_index()
 
-    with sqlite3.connect(str(settings.database_path)) as con:
-        add_rows(con, "holidays", holidays_df)
+    observations = [
+        Holiday(datetime=row["datetime"], is_holiday=bool(row["is_holiday"]))
+        for row in holidays_df.to_dict("records")
+    ]
+    Holiday.objects.bulk_create(
+        observations,
+        update_conflicts=True,
+        unique_fields=["datetime"],
+        update_fields=["is_holiday"],
+    )
