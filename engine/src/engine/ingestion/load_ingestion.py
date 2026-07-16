@@ -6,6 +6,7 @@ import pandas as pd
 from django.db.models import Max as models_max
 from django.db.models import Min as models_min
 
+from engine.logging_config import logger
 from engine.models import LoadObservation
 
 
@@ -51,6 +52,7 @@ def add_load_excel_to_db(file_path: Path, sheet_name: str, db_path: Path) -> Non
         unique_fields=["datetime"],
         update_fields=["load_mw"],
     )
+    logger.info(f"Loaded {len(observations):,.0f} load observations into the database")
 
 
 def get_load_start_end_dates(db_path: Path) -> tuple:

@@ -16,6 +16,9 @@ from engine.ingestion.load_ingestion import (
     get_load_start_end_dates,
 )
 from engine.ingestion.weather_ingestion import get_weather_data
+from engine.logging_config import logger, setup_logging
+
+setup_logging()
 
 if __name__ == "__main__":
     # Remove the database to ensure a clean rebuild each time
@@ -28,7 +31,7 @@ if __name__ == "__main__":
     # Migrations are disabled in settings
     settings.ENGINE_DB_ROOT.mkdir(parents=True, exist_ok=True)
     call_command("migrate", run_syncdb=True, verbosity=1)
-    print(f"Created SQLite database at {db_path}")
+    logger.info(f"Created SQLite database at {db_path}")
 
     add_load_excel_to_db(
         file_path=settings.ENGINE_RAW_EXCEL_ROOT / "BDD_E.xlsx",
@@ -42,4 +45,5 @@ if __name__ == "__main__":
     get_weather_data(start_date, end_date)
 
     cov = get_all_covariates(start_date, end_date)
+    logger.info(f"Built covariate frame with {len(cov):,.0f} rows")
     print(cov)
