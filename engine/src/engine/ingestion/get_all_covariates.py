@@ -8,17 +8,34 @@ from engine.database.manage_conn import read_table_as_df
 
 
 def get_all_covariates(from_date: datetime, to_date: datetime) -> pd.DataFrame:
-    all_tables = [
-        settings.tables.weather_tidy,
-        settings.tables.holidays,
-    ]
-
     with sqlite3.connect(str(settings.sqlite_path)) as con:
-        dfs = [
-            read_table_as_df(con, t, from_date, to_date, parse_dates="datetime")
-            for t in all_tables
-        ]
+        weather_df = read_table_as_df(
+            con,
+            settings.tables.weather,
+            from_date,
+            to_date,
+            parse_dates="datetime",
+        )
+        holidays_df = read_table_as_df(
+            con,
+            settings.tables.holidays,
+            from_date,
+            to_date,
+            parse_dates="datetime",
+        )
 
-    return pd.concat(dfs, axis=1, join="inner")
+    weather_tidy = (
+        weather_df.reset_index()
+        .pivot_table(
+            index="datetime",
+            columns="city",
+            values=weather_df.columns.difference(["datetime", "city"]).tolist(),
+            aggfunc="first",
+        )
+        .sort_index()
+    )
+    weather_tidy.columns = [f"{city}_{metric}" for metric, city in weather_tidy.columns]
 
-    # return
+    holidays_df = holidays_df.rename(columns={"holidays": "holidays"})
+
+    return pd.concat([weather_tidy, holidays_df], axis=1, join="inner")
