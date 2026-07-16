@@ -1,7 +1,14 @@
+import os
 from datetime import datetime
 
-from engine.config.config import settings
-from engine.database.initialise import create_database
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "engine.django_settings")
+django.setup()
+
+from django.conf import settings
+from django.core.management import call_command
+
 from engine.ingestion.get_all_covariates import get_all_covariates
 from engine.ingestion.get_holidays import get_holidays
 from engine.ingestion.load_ingestion import (
@@ -11,20 +18,25 @@ from engine.ingestion.load_ingestion import (
 from engine.ingestion.weather_ingestion import get_weather_data
 
 if __name__ == "__main__":
-    # remove the database to ensure
-    file_path = settings.database_path.resolve()
-    file_path.unlink(missing_ok=True)
+    # Remove the database to ensure a clean rebuild each time
+    # The weather cache is kept separate
+    db_path = settings.ENGINE_DB_ROOT / settings.ENGINE_SQLITE_FILENAME
+    db_path.unlink(missing_ok=True)
 
-    created_path = create_database()
-    print(f"Created SQLite database at {created_path}")
+    # Ensure the DB directory exists
+    # Then create the schema directly from the model definitions
+    # Migrations are disabled in settings
+    settings.ENGINE_DB_ROOT.mkdir(parents=True, exist_ok=True)
+    call_command("migrate", run_syncdb=True, verbosity=1)
+    print(f"Created SQLite database at {db_path}")
 
     add_load_excel_to_db(
-        file_path="data/raw/excel/BDD_E.xlsx",
+        file_path=settings.ENGINE_RAW_EXCEL_ROOT / "BDD_E.xlsx",
         sheet_name="Feuil1",
-        db_path=created_path,
+        db_path=db_path,
     )
 
-    start_date, end_date = get_load_start_end_dates(created_path)
+    start_date, end_date = get_load_start_end_dates(db_path)
     start_date = datetime(2016, 1, 1)  # Overrides the start date
     get_holidays(start_date, end_date)
     get_weather_data(start_date, end_date)
