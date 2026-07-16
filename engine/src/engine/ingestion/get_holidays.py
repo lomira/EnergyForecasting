@@ -15,10 +15,12 @@ def get_holidays(from_date: datetime, to_date: datetime) -> None:
     date_range = pd.date_range(start=from_date, end=to_date, freq="h")
     holidays_df = pd.DataFrame(index=date_range)
 
-    # ci_holidays maps date -> name; build a DatetimeIndex of holiday dates
-    # and test membership against the (hourly) frame index.
-    holiday_dates = pd.to_datetime(list(dz_holidays.keys()))
-    holidays_df["is_holiday"] = holidays_df.index.isin(holiday_dates).astype(int)
+    # dz_holidays maps date -> name; compare against the calendar date of each
+    # hourly timestamp so every hour of a holiday is flagged, not just midnight.
+    holiday_dates = set(dz_holidays.keys())
+    holidays_df["is_holiday"] = holidays_df.index.map(
+        lambda ts: ts.date() in holiday_dates
+    ).astype(int)
     # put the index as datetime
     holidays_df = holidays_df.rename_axis("datetime").reset_index()
 
