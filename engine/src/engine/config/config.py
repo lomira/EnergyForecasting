@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -26,7 +27,8 @@ class Ville(BaseModel):
     weight: int
 
 
-class Tables(BaseModel):
+@dataclass
+class Tables:
     load: str = "load_time_series"
     weather: str = "weather"
     weather_tidy: str = "weather_tidy"
@@ -36,7 +38,7 @@ class Tables(BaseModel):
 class Settings(BaseSettings):
     """Engine application settings."""
 
-    tables: Tables = Tables()
+    tables: Tables = Field(default_factory=Tables)
 
     model_config = SettingsConfigDict(
         env_file=(
@@ -63,14 +65,9 @@ class Settings(BaseSettings):
     weather_metrics_previous_days: int | None = None
 
     @property
-    def sqlite_path(self) -> Path:
-        """Location of the SQLite database file."""
-        return self.db_root / self.sqlite_filename
-
-    @property
     def database_path(self) -> Path:
         """Location of the application database file."""
-        return self.sqlite_path
+        return self.db_root / self.sqlite_filename
 
     def ensure_directories(self) -> None:
         """Create the directories if they do not exist."""

@@ -11,7 +11,7 @@ class ChronosModel(BaseEnergyModel):
 
     def __init__(self, model_config: dict):
         super().__init__(model_config)
-        self.quantile_levels: list[float] = model_config.get(
+        self.quantile_levels: list[float] = self.config.get(
             "quantile_levels", [0.1, 0.5, 0.9]
         )
         self.context_df: pd.DataFrame | None = None
@@ -37,7 +37,7 @@ class ChronosModel(BaseEnergyModel):
         features["timestamp"] = features.index
         target_col = context.columns[0]  # Assuming the first column is the target
         """Generate a forecast."""
-        return self.model.predict_df(
+        result = self.model.predict_df(
             context,
             future_df=features,
             prediction_length=len(features),  # Number of steps to forecast
@@ -46,6 +46,8 @@ class ChronosModel(BaseEnergyModel):
             timestamp_column="timestamp",  # Column with datetime information
             target=target_col,  # Column(s) with time series values to predict
         )
+        result.index = features_df.index
+        return result
 
     def save(self, path: str):
         """Persist the fitted model to disk."""

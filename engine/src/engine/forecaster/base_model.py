@@ -5,11 +5,7 @@ import pandas as pd
 
 class BaseEnergyModel(ABC):
     def __init__(self, model_config: dict):
-        self.config = (
-            # TODO: Use this config to initialize the model parameters
-            model_config
-        )
-        self.model = None
+        self.config = model_config
 
     @abstractmethod
     def fit(self, train_df: pd.DataFrame, target_col: str):
@@ -20,12 +16,6 @@ class BaseEnergyModel(ABC):
     def predict(self, features_df: pd.DataFrame) -> pd.DataFrame:
         """Generate a forecast."""
         pass
-
-    def predict_df(self, features_df: pd.DataFrame) -> pd.DataFrame:
-        """Return the forecast as a DataFrame with the same index as features_df."""
-        prediction_df = self.predict(features_df)
-        prediction_df.index = features_df.index
-        return prediction_df
 
     def backtest(
         self,

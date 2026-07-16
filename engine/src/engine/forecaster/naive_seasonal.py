@@ -13,7 +13,7 @@ class NaiveSeasonalModel(BaseEnergyModel):
 
     def __init__(self, model_config: dict):
         super().__init__(model_config)
-        self.k: int = model_config.get("k")
+        self.k: int = self.config.get("k")
         self.last_values: list[float] | None = None
 
     def fit(self, target_df: pd.DataFrame):
@@ -35,7 +35,7 @@ class NaiveSeasonalModel(BaseEnergyModel):
             raise ValueError("No values available to forecast.")
 
         repeated = [self.last_values[i % len(self.last_values)] for i in range(horizon)]
-        return pd.DataFrame({"forecast": repeated})
+        return pd.DataFrame({"forecast": repeated}, index=features_df.index)
 
     def save(self, path: str):
         """Persist the fitted model to disk."""

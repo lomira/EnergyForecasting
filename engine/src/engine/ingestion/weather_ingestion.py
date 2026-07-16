@@ -61,7 +61,7 @@ def get_weather_data(from_date: datetime, to_date: datetime) -> None:
         )
         hourly_dataframe["city"] = ville.name
 
-        with sqlite3.connect(str(settings.sqlite_path)) as con:
+        with sqlite3.connect(str(settings.database_path)) as con:
             add_rows(con, "weather", hourly_dataframe)
 
         print(f"Processed hourly data for {ville.name}")
