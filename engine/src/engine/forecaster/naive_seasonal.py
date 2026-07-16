@@ -1,5 +1,6 @@
 import pickle
 
+import numpy as np
 import pandas as pd
 
 from engine.forecaster.base_model import BaseEnergyModel
@@ -34,7 +35,8 @@ class NaiveSeasonalModel(BaseEnergyModel):
         if not self.last_values:
             raise ValueError("No values available to forecast.")
 
-        repeated = [self.last_values[i % len(self.last_values)] for i in range(horizon)]
+        period = len(self.last_values)
+        repeated = np.tile(self.last_values, horizon // period + 1)[:horizon]
         return pd.DataFrame({"forecast": repeated}, index=features_df.index)
 
     def save(self, path: str):
