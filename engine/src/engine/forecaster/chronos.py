@@ -28,13 +28,8 @@ class ChronosModel(BaseEnergyModel):
         if self.context_df is None or self.model is None:
             raise ValueError("The model must be fitted before calling predict().")
 
-        context = self.context_df.copy()
-        features = features_df.copy()
-
-        context["id"] = 0
-        context["timestamp"] = context.index
-        features["id"] = 0
-        features["timestamp"] = features.index
+        context = self.context_df.assign(id=0, timestamp=self.context_df.index)
+        features = features_df.assign(id=0, timestamp=features_df.index)
         target_col = context.columns[0]  # Assuming the first column is the target
         """Generate a forecast."""
         result = self.model.predict_df(
