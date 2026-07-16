@@ -5,7 +5,7 @@ import pandera.pandas as pa
 
 
 # LOAD MODEL
-class LoadSchema(pa.DataFrameModel):
+class HolidaysSchema(pa.DataFrameModel):
     datetime: datetime = pa.Field(description="PRIMARY_KEY")
     holidays: bool = pa.Field(
         description="Indicates whether the date is a public holiday or not"

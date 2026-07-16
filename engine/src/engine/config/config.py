@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Dict
+from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,10 +26,17 @@ class Ville(BaseModel):
     weight: int
 
 
+class Tables(BaseModel):
+    load: str = "load_time_series"
+    weather: str = "weather"
+    weather_tidy: str = "weather_tidy"
+    holidays: str = "holidays"
+
+
 class Settings(BaseSettings):
     """Engine application settings."""
 
-    ville: Dict[int, Ville] = Field(default_factory=dict)
+    tables: Tables = Tables()
 
     model_config = SettingsConfigDict(
         env_file=(
