@@ -5,8 +5,12 @@ from typing import get_args
 
 import pandera as pa
 from engine.config.config import settings
+from engine.data_model.holidays import HolidaysSchema
 from engine.data_model.load_model import LoadSchema
-from engine.data_model.weather_model import build_weather_schema
+from engine.data_model.weather_model import (
+    build_weather_column_names,
+    build_weather_schema,
+)
 
 
 def create_table_from_model(
@@ -37,17 +41,46 @@ def create_table_from_model(
     con.execute(schema_sql)
 
 
+def create_tidy_weather_view(con: sqlite3.Connection):
+    cities = [v[1].name for v in settings.ville.items()]
+    long_col_name = build_weather_column_names(
+        weather_metrics=settings.weather_metrics,
+        previous_days=settings.weather_metrics_previous_days,
+    )
+
+    columns = []
+    for city in cities:
+        for metric in long_col_name:
+            # Example: MAX(CASE WHEN City = 'Alger' THEN temperature_2m END) AS Alger_temperature_2m_day1
+            col = f"MAX(CASE WHEN City = '{city}' THEN {metric} END) AS {city}_{metric}"
+            columns.append(col)
+
+    sql = f"""
+    CREATE VIEW IF NOT EXISTS {settings.tables.weather_tidy} AS 
+    SELECT 
+        datetime, 
+        {", ".join(columns)} 
+    FROM {settings.tables.weather} 
+    GROUP BY datetime;
+    """
+
+    con.execute(f"DROP VIEW IF EXISTS {settings.tables.weather_tidy}")
+    con.execute(sql)
+
+
 def create_database() -> Path:
     """Create a SQLite database file and initialize the expected tables."""
     database_path = settings.sqlite_path.resolve()
     database_path.parent.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(str(database_path)) as con:
-        create_table_from_model(con, LoadSchema, "load_time_series")
+        create_table_from_model(con, LoadSchema, settings.tables.load)
+        create_table_from_model(con, HolidaysSchema, settings.tables.holidays)
         weather_schema = build_weather_schema(
             weather_metrics=settings.weather_metrics,
             previous_days=settings.weather_metrics_previous_days,
         )
-        create_table_from_model(con, weather_schema, "weather")
+        create_table_from_model(con, weather_schema, settings.tables.weather)
+        create_tidy_weather_view(con)
 
     return database_path
