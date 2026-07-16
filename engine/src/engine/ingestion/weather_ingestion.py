@@ -27,6 +27,7 @@ def get_weather_data(from_date: datetime, to_date: datetime) -> None:
     )
 
     # Process weather data per city
+    hourly_frames = []
     for _, ville in settings.ville.items():
         params = {
             "latitude": ville.lat,
@@ -60,8 +61,10 @@ def get_weather_data(from_date: datetime, to_date: datetime) -> None:
             columns={"index": "datetime"}
         )
         hourly_dataframe["city"] = ville.name
-
-        with sqlite3.connect(str(settings.database_path)) as con:
-            add_rows(con, "weather", hourly_dataframe)
+        hourly_frames.append(hourly_dataframe)
 
         print(f"Processed hourly data for {ville.name}")
+
+    with sqlite3.connect(str(settings.database_path)) as con:
+        for hourly_dataframe in hourly_frames:
+            add_rows(con, "weather", hourly_dataframe)

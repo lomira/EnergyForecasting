@@ -17,10 +17,7 @@ def get_holidays(from_date: datetime, to_date: datetime) -> None:
     date_range = pd.date_range(start=from_date, end=to_date, freq="h")
     holidays_df = pd.DataFrame(index=date_range)
 
-    holidays_df["holidays"] = holidays_df.index.date
-    holidays_df["holidays"] = holidays_df["holidays"].apply(
-        lambda x: 1 if x in ci_holidays else 0
-    )
+    holidays_df["holidays"] = holidays_df.index.date.isin(ci_holidays).astype(int)
     # put the index as datetime
     holidays_df = holidays_df.rename_axis("datetime").reset_index()
 
