@@ -61,17 +61,15 @@ class MigrationTests(TestCase):
                 "SELECT sql FROM sqlite_master "
                 "WHERE type='table' AND name='engine_weather'"
             ).fetchone()[0]
-            self.assertIn("datetime", table_sql)
-            self.assertIn("city", table_sql)
-            self.assertIn("metric", table_sql)
-
             indexes = cursor.execute(
                 "SELECT sql FROM sqlite_master WHERE type='index' "
                 "AND tbl_name='engine_weather' AND sql IS NOT NULL"
             ).fetchall()
-        self.assertTrue(
-            any(
-                "datetime" in ix[0] and "city" in ix[0] and "metric" in ix[0]
-                for ix in indexes
-            )
-        )
+        # Metric columns are present (named exactly like the Open-Meteo params),
+        # e.g. temperature_2m and the previous-day variants like
+        # wind_speed_10m_previous_day2. The city is a separate column.
+        self.assertIn("temperature_2m", table_sql)
+        self.assertIn("wind_speed_10m_previous_day2", table_sql)
+        self.assertIn("city", table_sql)
+        # The (datetime, city) pair is the unique constraint.
+        self.assertTrue(any("datetime" in ix[0] and "city" in ix[0] for ix in indexes))

@@ -34,24 +34,45 @@ class Holiday(models.Model):
 
 
 class WeatherObservation(models.Model):
-    """A single weather metric value for one city at one timestamp (EAV)."""
+    """Wide weather table: one row per (timestamp, city), one column per metric.
 
-    # TODO Fix this after because it takes way too much times now
+    NAMING CONVENTION : keep every metric column named EXACTLY like the Open-Meteo hourly variable it stores
+    Because the ingestion derives the list of API variables to request straight from these metric field names
+    """
 
     datetime = models.DateTimeField()
     city = models.CharField(max_length=64)
-    metric = models.CharField(max_length=64)
-    value = models.FloatField(null=True, blank=True)
+
+    temperature_2m = models.FloatField(null=True, blank=True)
+    temperature_2m_previous_day1 = models.FloatField(null=True, blank=True)
+    temperature_2m_previous_day2 = models.FloatField(null=True, blank=True)
+    relative_humidity_2m = models.FloatField(null=True, blank=True)
+    relative_humidity_2m_previous_day1 = models.FloatField(null=True, blank=True)
+    relative_humidity_2m_previous_day2 = models.FloatField(null=True, blank=True)
+    precipitation = models.FloatField(null=True, blank=True)
+    precipitation_previous_day1 = models.FloatField(null=True, blank=True)
+    precipitation_previous_day2 = models.FloatField(null=True, blank=True)
+    wind_speed_10m = models.FloatField(null=True, blank=True)
+    wind_speed_10m_previous_day1 = models.FloatField(null=True, blank=True)
+    wind_speed_10m_previous_day2 = models.FloatField(null=True, blank=True)
+    shortwave_radiation = models.FloatField(null=True, blank=True)
+    shortwave_radiation_previous_day1 = models.FloatField(null=True, blank=True)
+    shortwave_radiation_previous_day2 = models.FloatField(null=True, blank=True)
 
     class Meta:
         db_table = "engine_weather"
         verbose_name = "weather observation"
         verbose_name_plural = "weather observations"
-        unique_together = [("datetime", "city", "metric")]
-        indexes = [
-            models.Index(fields=["datetime", "city"]),
-            models.Index(fields=["metric"]),
-        ]
+        unique_together = [("datetime", "city")]
 
     def __str__(self) -> str:
-        return f"{self.datetime} {self.city} {self.metric}={self.value}"
+        return f"{self.datetime} {self.city}: weather row"
+
+
+def weather_api_params() -> list[str]:
+    """Open-Meteo hourly variable names, derived from WeatherObservation fields."""
+    return [
+        f.name
+        for f in WeatherObservation._meta.fields
+        if isinstance(f, models.FloatField)  # To avoid the PK
+    ]
