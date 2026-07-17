@@ -17,19 +17,20 @@ class NaiveSeasonalModel(BaseEnergyModel):
         self.k: int = self.config.get("k")
         self.last_values: list[float] | None = None
 
-    def fit(self, target_df: pd.DataFrame):
+    def fit(self, y: pd.Series, X: pd.DataFrame | None = None):
         """Store the last ``k`` values from the training series."""
-        values = target_df.iloc[:, 0].astype(float).tolist()
+        values = y.astype(float).tolist()
         self.last_values = values[-self.k :] if self.k > 0 else []
         return self
 
-    def predict(self, features_df: pd.DataFrame) -> pd.DataFrame:
+    def predict(
+        self, horizon: int, X_future: pd.DataFrame | None = None
+    ) -> pd.DataFrame:
         """Generate a forecast by repeating the stored seasonal pattern."""
         if self.last_values is None:
             raise ValueError("The model must be fitted before calling predict().")
 
-        horizon = len(features_df)
-        if horizon == 0:
+        if horizon <= 0:
             return pd.DataFrame({"forecast": []})
 
         if not self.last_values:
@@ -37,7 +38,7 @@ class NaiveSeasonalModel(BaseEnergyModel):
 
         period = len(self.last_values)
         repeated = np.tile(self.last_values, horizon // period + 1)[:horizon]
-        return pd.DataFrame({"forecast": repeated}, index=features_df.index)
+        return pd.DataFrame({"forecast": repeated})
 
     def save(self, path: str):
         """Persist the fitted model to disk."""

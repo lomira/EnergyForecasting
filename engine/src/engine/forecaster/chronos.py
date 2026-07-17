@@ -1,5 +1,3 @@
-import pickle
-
 import pandas as pd
 from chronos import Chronos2Pipeline
 
@@ -14,24 +12,26 @@ class ChronosModel(BaseEnergyModel):
         self.quantile_levels: list[float] = self.config.get(
             "quantile_levels", [0.1, 0.5, 0.9]
         )
-        self.context_df: pd.DataFrame | None = None
+        self.context_series: pd.Series | None = None
         self.model = None  # Placeholder for the actual Chronos model
 
-    def fit(self, target_df: pd.DataFrame):
+    def fit(self, y: pd.Series, X: pd.DataFrame | None = None):
         self.model = Chronos2Pipeline.from_pretrained(
             "data/artefacts/chronos", device_map="cuda"
         )
-        self.context_df = target_df.copy()
+        self.context_series = y.copy()
         return self
 
-    def predict(self, features_df: pd.DataFrame) -> pd.DataFrame:
-        if self.context_df is None or self.model is None:
-            raise ValueError("The model must be fitted before calling predict().")
+    def predict(
+        self, horizon: int, X_future: pd.DataFrame | None = None
+    ) -> pd.DataFrame:
+        target_col = self.context_series.name or "target"
+        context = self.context_series.rename(target_col).to_frame().assign(id=0)
+        context["timestamp"] = context.index
 
-        context = self.context_df.assign(id=0, timestamp=self.context_df.index)
-        features = features_df.assign(id=0, timestamp=features_df.index)
-        target_col = context.columns[0]  # Assuming the first column is the target
-        """Generate a forecast."""
+        features = pd.DataFrame(index=X_future.index).assign(id=0)
+        features["timestamp"] = features.index
+
         result = self.model.predict_df(
             context,
             future_df=features,
@@ -41,26 +41,5 @@ class ChronosModel(BaseEnergyModel):
             timestamp_column="timestamp",  # Column with datetime information
             target=target_col,  # Column(s) with time series values to predict
         )
-        result.index = features_df.index
+        result.index = X_future.index
         return result
-
-    def save(self, path: str):
-        """Persist the fitted model to disk."""
-        model = self.model
-        self.model = None
-        try:
-            with open(path, "wb") as handle:
-                pickle.dump(self, handle)
-        finally:
-            self.model = model
-
-    @classmethod
-    def load(cls, path: str) -> ChronosModel:
-        """Load a fitted model from disk."""
-        with open(path, "rb") as handle:
-            model = pickle.load(handle)
-        if model.context_df is not None and model.model is None:
-            model.model = Chronos2Pipeline.from_pretrained(
-                "amazon/chronos-2", device_map="cpu"
-            )
-        return model
