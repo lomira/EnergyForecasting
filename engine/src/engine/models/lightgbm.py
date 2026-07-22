@@ -1,8 +1,10 @@
 """LightGBM baseline configuration."""
 
+from darts.dataprocessing.transformers import Scaler
 from darts.models import LightGBMModel
+from sklearn.preprocessing import RobustScaler
 
-from engine.featurize.factories import robust_scaler, rolling_lags
+from engine.featurize.lags import RollingLagTransformer
 
 LIGHTGBM_CONFIG = {
     "name": "lightgbm_baseline",
@@ -20,7 +22,7 @@ LIGHTGBM_CONFIG = {
     "feature_subset": ("temperature_2m",),
     "target_transform_chain": (),  # trees are scale-invariant no need to scale
     "past_cov_transform_chain": (
-        rolling_lags(windows=(24, 168), stats=("mean", "std"), lag=24),
+        RollingLagTransformer(windows=(24, 168), stats=("mean", "std"), lag=24),
     ),
-    "future_cov_transform_chain": (robust_scaler(),),
+    "future_cov_transform_chain": (Scaler(RobustScaler()),),
 }
