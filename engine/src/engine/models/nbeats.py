@@ -1,8 +1,8 @@
 """N-BEATS configuration."""
 
+from darts.dataprocessing.transformers import Scaler
 from darts.models import NBEATSModel
-
-from engine.featurize.factories import robust_scaler
+from sklearn.preprocessing import RobustScaler
 
 NBEATS_CONFIG = {
     "name": "nbeats",
@@ -17,7 +17,7 @@ NBEATS_CONFIG = {
         "n_epochs": 50,
     },
     "feature_subset": (),
-    "target_transform_chain": (robust_scaler(),),
+    "target_transform_chain": (Scaler(RobustScaler()),),
     "past_cov_transform_chain": (),
     "future_cov_transform_chain": (),
 }

@@ -1,8 +1,8 @@
 """Temporal Fusion Transformer configuration."""
 
+from darts.dataprocessing.transformers import Scaler
 from darts.models import TFTModel
-
-from engine.featurize.factories import robust_scaler, rolling_lags
+from sklearn.preprocessing import RobustScaler
 
 TFT_CONFIG = {
     "name": "tft",
@@ -24,10 +24,6 @@ TFT_CONFIG = {
         },
     },
     "feature_subset": ("temperature_2m",),
-    "target_transform_chain": (robust_scaler(),),
-    "past_cov_transform_chain": (
-        rolling_lags(windows=(24, 168), stats=("mean", "std"), lag=24),
-        robust_scaler(),
-    ),
-    "future_cov_transform_chain": (robust_scaler(),),
+    "target_transform_chain": (Scaler(RobustScaler()),),
+    "future_cov_transform_chain": (Scaler(RobustScaler()),),
 }
