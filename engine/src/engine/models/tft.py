@@ -4,6 +4,8 @@ from darts.dataprocessing.transformers import Scaler
 from darts.models import TFTModel
 from sklearn.preprocessing import RobustScaler
 
+from engine.featurize.lags import RollingLagTransformer
+
 TFT_CONFIG = {
     "name": "tft",
     "model_cls": TFTModel,
@@ -25,5 +27,9 @@ TFT_CONFIG = {
     },
     "feature_subset": ("temperature_2m",),
     "target_transform_chain": (Scaler(RobustScaler()),),
+    "past_cov_transform_chain": (
+        RollingLagTransformer(windows=(24, 168), stats=("mean", "std"), lag=24),
+        Scaler(RobustScaler()),
+    ),
     "future_cov_transform_chain": (Scaler(RobustScaler()),),
 }
