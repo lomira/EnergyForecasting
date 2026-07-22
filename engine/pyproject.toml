@@ -22,7 +22,8 @@ dependencies = [
     "retry-requests>=2.0.0",
     "django>6.0",
     "loguru>=0.7.3",
-    "darts>=0.46.0"
+    "darts>=0.46.0",
+    "holidays>=0.100",
 ]
 
 
