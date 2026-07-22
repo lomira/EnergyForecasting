@@ -11,15 +11,13 @@ LIGHTGBM_CONFIG = {
         "lags": [-1, -2, -24, -48, -168],
         "output_chunk_length": 24,
         "num_leaves": 63,
+        "add_encoders": {
+            "cyclic": {"future": ["hour", "dayofweek"]},
+            "datetime_attribute": {"future": ["month"]},
+            "tz": "UTC",
+        },
     },
-    "feature_subset": (
-        "temperature_2m",
-        "hour_sin",
-        "hour_cos",
-        "dow_sin",
-        "dow_cos",
-        "is_holiday",
-    ),
+    "feature_subset": ("temperature_2m",),
     "target_transform_chain": (),  # trees are scale-invariant no need to scale
     "past_cov_transform_chain": (
         rolling_lags(windows=(24, 168), stats=("mean", "std"), lag=24),
