@@ -6,17 +6,17 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "engine.django_settings")
 django.setup()
 
-from django.conf import settings
-from django.core.management import call_command
+from django.conf import settings  # noqa: E402
+from django.core.management import call_command  # noqa: E402
 
-from engine.ingestion.get_all_covariates import get_all_covariates
-from engine.ingestion.get_holidays import get_holidays
-from engine.ingestion.load_ingestion import (
+from engine.ingestion.get_all_covariates import get_all_covariates  # noqa: E402
+from engine.ingestion.get_holidays import get_holidays  # noqa: E402
+from engine.ingestion.load_ingestion import (  # noqa: E402
     add_load_excel_to_db,
     get_load_start_end_dates,
 )
-from engine.ingestion.weather_ingestion import get_weather_data
-from engine.logging_config import logger, setup_logging
+from engine.ingestion.weather_ingestion import get_weather_data  # noqa: E402
+from engine.logging_config import logger, setup_logging  # noqa: E402
 
 setup_logging()
 
