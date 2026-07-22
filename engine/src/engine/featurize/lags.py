@@ -10,10 +10,10 @@ from typing import Sequence
 
 import pandas as pd
 from darts import TimeSeries
-from darts.dataprocessing.transformers import DataTransformer
+from darts.dataprocessing.transformers import BaseDataTransformer
 
 
-class RollingLagTransformer(DataTransformer):
+class RollingLagTransformer(BaseDataTransformer):
     def __init__(
         self,
         windows: Sequence[int] = (24, 168),

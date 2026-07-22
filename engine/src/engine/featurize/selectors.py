@@ -3,10 +3,10 @@
 from typing import Sequence
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers import DataTransformer
+from darts.dataprocessing.transformers import BaseDataTransformer
 
 
-class ColumnSubsetTransformer(DataTransformer):
+class ColumnSubsetTransformer(BaseDataTransformer):
     def __init__(
         self,
         columns: Sequence[str],

@@ -10,9 +10,9 @@ Each module exports a single CONFIG dict with the shape:
 
 """
 
-from engine.models.lightgbm import LIGHTGBM_CONFIG
-from engine.models.nbeats import NBEATS_CONFIG
-from engine.models.tft import TFT_CONFIG
+from engine.model_configs.lightgbm import LIGHTGBM_CONFIG
+from engine.model_configs.nbeats import NBEATS_CONFIG
+from engine.model_configs.tft import TFT_CONFIG
 
 REGISTERED_MODELS: dict[str, dict] = {
     "lightgbm_V1": LIGHTGBM_CONFIG,
