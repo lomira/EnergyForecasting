@@ -25,19 +25,6 @@ def build_model(config: dict, **extra: Any) -> ForecastingModel:
     return model_cls(**hyperparams)
 
 
-def _build_pipeline(chain: tuple[Any, ...] | tuple[()]) -> Pipeline | None:
-    """Build a pipeline from a tuple of factory results (or None if empty)."""
-    if not chain:
-        return None
-    return Pipeline(list(chain))
-
-
-def build_target_pipeline(config: dict) -> Pipeline | None:
-    """Build the target transform pipeline."""
-    chain = config.get("target_transform_chain", ())
-    return _build_pipeline(chain)
-
-
 def build_data_transformers(config: dict) -> dict[str, Pipeline]:
     """Build the ``data_transformers`` dict expected by Darts ``historical_forecasts``.
 
@@ -47,16 +34,17 @@ def build_data_transformers(config: dict) -> dict[str, Pipeline]:
         - ``"future_covariates"``: future-covariate pipeline
     """
     dt: dict[str, Pipeline] = {}
-    target = build_target_pipeline(config)
-    if target is not None:
-        dt["series"] = target
 
-    past = _build_pipeline(config.get("past_cov_transform_chain", ()))
-    if past is not None:
-        dt["past_covariates"] = past
+    target_chain = config.get("target_transform_chain", ())
+    if target_chain:
+        dt["series"] = Pipeline(list(target_chain))
 
-    fut = _build_pipeline(config.get("future_cov_transform_chain", ()))
-    if fut is not None:
-        dt["future_covariates"] = fut
+    past_chain = config.get("past_cov_transform_chain", ())
+    if past_chain:
+        dt["past_covariates"] = Pipeline(list(past_chain))
+
+    fut_chain = config.get("future_cov_transform_chain", ())
+    if fut_chain:
+        dt["future_covariates"] = Pipeline(list(fut_chain))
 
     return dt

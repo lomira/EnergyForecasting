@@ -19,7 +19,7 @@ class RollingLagTransformer(BaseDataTransformer):
         windows: Sequence[int] = (24, 168),
         stats: Sequence[str] = ("mean", "std"),
         lag: int = 24,
-        fill: str = "first_valid",
+        fill_nan: bool = True,
         name: str | None = None,
         n_jobs: int = 1,
         verbose: bool = False,
@@ -27,7 +27,7 @@ class RollingLagTransformer(BaseDataTransformer):
         self._windows = tuple(int(w) for w in windows)
         self._stats = tuple(str(s) for s in stats)
         self._lag = int(lag)
-        self._fill = str(fill)
+        self._fill_nan = bool(fill_nan)
         super().__init__(
             name=name
             or f"RollingLag(lag={self._lag},w={self._windows},stats={self._stats})",
@@ -39,7 +39,7 @@ class RollingLagTransformer(BaseDataTransformer):
     def ts_transform(series: TimeSeries, params: dict) -> TimeSeries:
         fixed = params["fixed"]
         windows, stats = fixed["_windows"], fixed["_stats"]
-        lag, fill = fixed["_lag"], fixed["_fill"]
+        lag, fill_nan = fixed["_lag"], fixed["_fill_nan"]
 
         df = series.to_dataframe()
         feats: dict[str, pd.Series] = {}
@@ -51,9 +51,6 @@ class RollingLagTransformer(BaseDataTransformer):
                     feats[f"{col}__roll_{s}{w}_lag{lag}"] = getattr(roll, s)()
 
         out = pd.concat([df, pd.DataFrame(feats, index=df.index)], axis=1)
-        if fill == "first_valid":
+        if fill_nan:
             out = out.bfill().ffill()  # bfill source is the first VALID value in-slice
-        elif fill != "none":
-            raise ValueError(f"unknown fill policy: {fill}")
-
         return TimeSeries.from_dataframe(out)

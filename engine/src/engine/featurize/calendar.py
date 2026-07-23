@@ -10,7 +10,8 @@ def encode_onehot_custom_weekday(index: pd.DatetimeIndex) -> np.ndarray:
 
     - Cat 1 => Monday and Friday
     - Cat 2 => T/W/T
-    - Cat 3 => Weekend
+    - Cat 3 => Saturday
+    - Cat 4 => Sunday
     """
 
     conditions = [

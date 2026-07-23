@@ -10,18 +10,19 @@ from engine.logging_config import logger, timed
 from engine.models import WeatherObservation, weather_api_params
 
 
+def _log_cache_hit(response, *args, **kwargs):
+    """Log whether an Open-Meteo response was served from cache or made a live API call."""
+    status = "CACHE HIT" if getattr(response, "from_cache", False) else "API CALL"
+    logger.debug(f"[{status}] {response.request.method} {response.request.url}")
+    return response
+
+
 def get_weather_data(from_date: datetime, to_date: datetime) -> None:
     """Fetch weather from Open-Meteo and store it as one wide row per timestamp."""
     cache_session = requests_cache.CachedSession(
         settings.ENGINE_CACHE_METEO,
         expire_after=-1,  # Never
     )
-
-    def _log_cache_hit(response, *args, **kwargs):
-        status = "CACHE HIT" if getattr(response, "from_cache", False) else "API CALL"
-        logger.debug(f"[{status}] {response.request.method} {response.request.url}")
-        return response
-
     cache_session.hooks["response"].append(_log_cache_hit)
 
     retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
