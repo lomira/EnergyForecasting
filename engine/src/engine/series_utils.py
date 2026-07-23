@@ -65,21 +65,3 @@ def covariates_time_series(
         df = df[list(feature_subset)]
 
     return TimeSeries.from_dataframe(df)
-
-
-def build_training_data(
-    from_date: datetime,
-    to_date: datetime,
-    feature_subset: tuple[str, ...] = (),
-) -> tuple[TimeSeries, TimeSeries | None]:
-    """One-stop shop: load target + covariates as Darts TimeSeries.
-
-    Returns
-    -------
-    (series, future_cov)
-        Covariates are returned as **future covariates** by default
-        They are known at prediction time : eg weather forecasts, timeattribute, etc.
-    """
-    series = load_time_series(from_date, to_date)
-    future_cov = covariates_time_series(from_date, to_date, feature_subset)
-    return series, future_cov

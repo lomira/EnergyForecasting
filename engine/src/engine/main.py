@@ -81,7 +81,6 @@ if __name__ == "__main__":
         train_length=24 * 14,  # 2 weeks of hourly data
         retrain=True,
         start=pd.Timestamp("2020-01-01"),
-        transform_policy="per_retrain",
     )
 
     logger.info("Running LightGBM backtest (this may take a moment)…")
