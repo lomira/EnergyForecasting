@@ -34,4 +34,4 @@ def get_all_covariates(from_date: datetime, to_date: datetime) -> pd.DataFrame:
         list(holiday_rows), columns=["datetime", "holidays"]
     ).set_index("datetime")
 
-    return pd.concat([weather_tidy, holidays_df], axis=1, join="inner")
+    return pd.concat([weather_tidy, holidays_df], axis=1, join="outer")

@@ -32,7 +32,7 @@ def load_time_series(
     if not records:
         raise ValueError("No load observations found in the database.")
 
-    df = pd.DataFrame.from_records(records).set_index("datetime").sort_index()
+    df = pd.DataFrame.from_records(records).sort_values("datetime")
     return TimeSeries.from_dataframe(df, time_col="datetime", value_cols="load_mw")
 
 
@@ -53,6 +53,9 @@ def covariates_time_series(
         stage rather than inside the pipeline.
     """
     df = get_all_covariates(from_date, to_date)
+    if df.empty:
+        raise ValueError(f"No covariates found between {from_date} and {to_date}")
+
     if feature_subset:
         missing = set(feature_subset) - set(df.columns)
         if missing:
@@ -61,7 +64,7 @@ def covariates_time_series(
             )
         df = df[list(feature_subset)]
 
-    return TimeSeries.from_dataframe(df, time_col="datetime")
+    return TimeSeries.from_dataframe(df)
 
 
 def build_training_data(
