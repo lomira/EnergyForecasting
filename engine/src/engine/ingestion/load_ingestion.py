@@ -38,7 +38,7 @@ def format_load_data(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_load_excel_to_db(file_path: Path, sheet_name: str, db_path: Path) -> None:
     """Add the load excel to the SQLite database."""
-    excel_file = pd.read_excel(file_path, sheet_name=sheet_name, engine="openpyxl")
+    excel_file = pd.read_excel(file_path, sheet_name=sheet_name)
     tidy_load_data = format_load_data(excel_file)
 
     # Upsert into the Django ORM model
