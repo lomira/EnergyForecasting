@@ -29,7 +29,7 @@ def _build_pipeline(chain: tuple[Any, ...] | tuple[()]) -> Pipeline | None:
     """Build a pipeline from a tuple of factory results (or None if empty)."""
     if not chain:
         return None
-    return Pipeline(list(chain)) if len(chain) > 1 else chain[0]
+    return Pipeline(list(chain))
 
 
 def build_target_pipeline(config: dict) -> Pipeline | None:

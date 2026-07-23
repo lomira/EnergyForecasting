@@ -41,7 +41,7 @@ class RollingLagTransformer(BaseDataTransformer):
         windows, stats = fixed["_windows"], fixed["_stats"]
         lag, fill = fixed["_lag"], fixed["_fill"]
 
-        df = series.pd_dataframe()
+        df = series.to_dataframe()
         feats: dict[str, pd.Series] = {}
         for col in df.columns:
             shifted = df[col].shift(lag)  # strictly-past values only

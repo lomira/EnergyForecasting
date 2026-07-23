@@ -20,7 +20,7 @@ FoldCallback = Callable[[int, float], None]  # (fold_idx, fold_wape) -> None
 
 def data_fingerprint(series: TimeSeries, decimals: int = 2) -> str:
     """Fingerprint of metadata + rounded values (robust to float repr noise)."""
-    df = series.pd_dataframe()
+    df = series.to_dataframe()
     # Round numeric values to a safe decimal place to avoid float noise
     df_rounded = df.round(decimals)
     payload = {
@@ -121,11 +121,15 @@ def run_backtest(
     fp = data_fingerprint(series)
 
     # ---- compute config hash ----
+    model_cls = config["model_cls"]
+    model_name = (
+        model_cls.__name__ if hasattr(model_cls, "__name__") else str(model_cls)
+    )
     config_hash = hashlib.sha256(
         str(
             (
                 config["name"],
-                config["model_cls"].__name__,
+                model_name,
                 str(sorted(config.get("hyperparams", {}).items())),
             )
         ).encode()
