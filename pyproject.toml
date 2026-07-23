@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "engine",
+    "openpyxl>=3.1.5",
 ]
 
 [tool.uv.workspace]
