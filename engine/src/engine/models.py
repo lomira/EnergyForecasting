@@ -1,5 +1,7 @@
 """Django ORM models for the engine's time-series data."""
 
+from functools import cache
+
 from django.db import models
 
 
@@ -69,6 +71,7 @@ class WeatherObservation(models.Model):
         return f"{self.datetime} {self.city}: weather row"
 
 
+@cache
 def weather_api_params() -> list[str]:
     """Open-Meteo hourly variable names, derived from WeatherObservation fields."""
     return [
