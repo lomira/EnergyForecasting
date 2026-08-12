@@ -4,6 +4,7 @@ import openmeteo_requests
 import pandas as pd
 import requests_cache
 from django.conf import settings
+from django.db import connection, transaction
 from retry_requests import retry
 
 from engine.logging_config import logger, timed
@@ -15,6 +16,36 @@ def _log_cache_hit(response, *args, **kwargs):
     status = "CACHE HIT" if getattr(response, "from_cache", False) else "API CALL"
     logger.debug(f"[{status}] {response.request.method} {response.request.url}")
     return response
+
+
+# The insert bulk from native django ORM is not efficient enough for the large number of weather observations, so we use a raw SQL upsert instead.
+# This is compatible with SQLite and PostgreSQL, but may need adjustments for DuckDB
+# On my machine the native orm took around 4.5 sec whereas the raw SQL upsert took around 0.5 sec
+# In the end, it might be better to keep the native way if the 4 secondes are not a problem,
+# because it is more readable and maintainable.
+# But for now, we keep the raw SQL upsert for performance reaso, as I recreate the database each time
+
+
+def _upsert_weather(rows: dict, metrics: list[str]) -> None:
+    columns = ["datetime", "city", *metrics]
+    quote = connection.ops.quote_name
+    sql = (
+        f"INSERT INTO {quote(WeatherObservation._meta.db_table)} "
+        f"({', '.join(map(quote, columns))}) "
+        f"VALUES ({', '.join(['%s'] * len(columns))}) "
+        f"ON CONFLICT ({quote('datetime')}, {quote('city')}) DO UPDATE SET "
+        + ", ".join(f"{quote(name)} = excluded.{quote(name)}" for name in metrics)
+    )
+    records = (
+        (
+            str(row["datetime"]),
+            row["city"],
+            *(None if pd.isna(row.get(name)) else float(row[name]) for name in metrics),
+        )
+        for row in rows.values()
+    )
+    with transaction.atomic(), connection.cursor() as cursor:
+        cursor.executemany(sql, records)
 
 
 def get_weather_data(from_date: datetime, to_date: datetime) -> None:
@@ -63,12 +94,6 @@ def get_weather_data(from_date: datetime, to_date: datetime) -> None:
                     row = rows.setdefault(key, {"datetime": ts, "city": ville["name"]})
                     row[api_param] = value
 
-    observations = [WeatherObservation(**row) for row in rows.values()]
     with timed("bulk insert weather observations"):
-        WeatherObservation.objects.bulk_create(
-            observations,
-            update_conflicts=True,
-            unique_fields=["datetime", "city"],
-            update_fields=weather_api_params(),
-        )
-    logger.info(f"Stored {len(observations):,.0f} weather observations")
+        _upsert_weather(rows, hourly_requests)
+    logger.info(f"Stored {len(rows):,.0f} weather observations")
