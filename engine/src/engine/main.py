@@ -9,7 +9,6 @@ django.setup()
 from django.conf import settings  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 
-from engine.ingestion.get_all_covariates import get_all_covariates  # noqa: E402
 from engine.ingestion.get_holidays import get_holidays  # noqa: E402
 from engine.ingestion.load_ingestion import (  # noqa: E402
     add_load_excel_to_db,
@@ -44,9 +43,6 @@ if __name__ == "__main__":
     start_date = datetime(2016, 1, 1)  # Overrides the start date
     get_holidays(start_date, end_date)
     get_weather_data(start_date, end_date)
-
-    cov = get_all_covariates(start_date, end_date)
-    logger.info(f"Built covariate frame with {len(cov):,.0f} rows")
 
     # --- Forecasting phase ---
     import pandas as pd
