@@ -10,12 +10,13 @@ Each module exports a single CONFIG dict with the shape:
 
 """
 
-from engine.model_configs.lightgbm import LIGHTGBM_CONFIG
-from engine.model_configs.nbeats import NBEATS_CONFIG
-from engine.model_configs.tft import TFT_CONFIG
+import engine.model_configs.lightgbm as lgbm
+import engine.model_configs.nbeats as nbeast
+import engine.model_configs.tft as tft
 
 REGISTERED_MODELS: dict[str, dict] = {
-    "lightgbm_V1": LIGHTGBM_CONFIG,
-    "tft_V1": TFT_CONFIG,
-    "nbeats_V1": NBEATS_CONFIG,
+    "lightgbm_V1": lgbm.LIGHTGBM_CONFIG_BASE,
+    "lightgbm_nex": lgbm.LIGHTGBM_CONFIG_NOEXOGENEOUS,
+    "tft_V1": tft.TFT_CONFIG,
+    "nbeats_V1": nbeast.NBEATS_CONFIG,
 }
