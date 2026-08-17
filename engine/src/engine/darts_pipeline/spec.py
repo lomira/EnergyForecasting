@@ -21,8 +21,6 @@ class BacktestSpec:
         Steps ahead to forecast (e.g. 24 for day-ahead hourly).
     stride : int
         Steps between successive forecast origins.
-    train_length : int
-        Rolling window length in steps. Caps per-fold fit cost.
     retrain : bool | int
         True = every origin; int k = every k-th origin.
     start : pd.Timestamp
@@ -35,7 +33,6 @@ class BacktestSpec:
 
     forecast_horizon: int
     stride: int
-    train_length: int
     retrain: bool | int
     start: pd.Timestamp
     overlap_end: bool = False
@@ -45,7 +42,6 @@ class BacktestSpec:
         payload = {
             "h": self.forecast_horizon,
             "stride": self.stride,
-            "train_length": self.train_length,
             "retrain": self.retrain,
             "start": str(self.start),
             "overlap_end": self.overlap_end,

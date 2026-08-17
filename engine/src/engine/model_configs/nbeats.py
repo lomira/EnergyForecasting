@@ -7,6 +7,7 @@ from sklearn.preprocessing import RobustScaler
 NBEATS_CONFIG = {
     "name": "nbeats",
     "model_cls": NBEATSModel,
+    "train_length": 24 * 21,
     "hyperparams": {
         "input_chunk_length": 336,
         "output_chunk_length": 24,

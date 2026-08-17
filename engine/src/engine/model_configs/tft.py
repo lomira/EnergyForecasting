@@ -9,6 +9,7 @@ from engine.featurize.lags import RollingLagTransformer
 TFT_CONFIG = {
     "name": "tft",
     "model_cls": TFTModel,
+    "train_length": 24 * 21,
     "hyperparams": {
         "input_chunk_length": 336,
         "output_chunk_length": 24,

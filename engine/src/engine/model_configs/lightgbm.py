@@ -7,6 +7,7 @@ from engine.featurize.calendar import encode_onehot_custom_weekday
 LIGHTGBM_CONFIG_BASE = {
     "name": "lightgbm_baseline",
     "model_cls": LightGBMModel,
+    "train_length": 24 * 21,
     "hyperparams": {
         "lags": [-1, -2, -24, -48, -168],
         "lags_future_covariates": [0, 1, 2, 23, 24, 25],
@@ -29,6 +30,7 @@ LIGHTGBM_CONFIG_BASE = {
 LIGHTGBM_CONFIG_NOEXOGENEOUS = {
     "name": "lightgbm_baseline",
     "model_cls": LightGBMModel,
+    "train_length": 24 * 21,
     "hyperparams": {
         "lags": [-1, -2, -24, -48, -168],
         "lags_future_covariates": [0, 1, 2, 23, 24, 25],

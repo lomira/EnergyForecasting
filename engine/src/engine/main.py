@@ -79,7 +79,6 @@ if __name__ == "__main__":
     spec = BacktestSpec(
         forecast_horizon=24,
         stride=24 * 7,  # 1 week between origins
-        train_length=24 * 21,  # 3 weeks of hourly data
         retrain=True,
         start=pd.Timestamp("2020-01-01"),
     )
@@ -106,11 +105,16 @@ if __name__ == "__main__":
         )
     print(f"{'=' * 60}\n")
 
-    # --- One-shot forecast (fit on full data, predict 24h ahead) ---
+    # --- One-shot forecast (fit on the model's training window, predict 24h ahead) ---
     # The forecast needs future covariates for the 24h beyond the data end
-    logger.info("Fitting LightGBM on full data and forecasting 24h ahead…")
+    train_length = model_config["train_length"]
+    training_series = series[-train_length:]
+    training_cov = future_cov.slice_intersect(training_series)
+    logger.info(
+        f"Fitting LightGBM on the last {train_length} steps and forecasting 24h ahead…"
+    )
     model = build_model(model_config)
-    model.fit(series, future_covariates=future_cov)
+    model.fit(training_series, future_covariates=training_cov)
     # Build future covariates beyond the training data end for the forecast horizon.
     # Models without explicit future-covariate lags only need the forecast horizon.
     fcst_start = series.end_time() + pd.Timedelta(hours=1)

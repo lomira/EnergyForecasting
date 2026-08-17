@@ -2,6 +2,7 @@
 
 Each module exports a single CONFIG dict with the shape:
     model_cls       — the Darts ForecastingModel class
+    train_length    — training window used by backtests and forecasts
     hyperparams     — kwargs passed to the model constructor
     feature_subset  — columns to select from covariates
     target_transform_chain    — factory tuples for the target pipeline

@@ -64,11 +64,11 @@ def wape(forecast: TimeSeries, actual: TimeSeries) -> float:
     return float(np.abs(f - a).sum() / denom)
 
 
-def _hf_kwargs(spec: BacktestSpec) -> dict:
+def _hf_kwargs(config: dict, spec: BacktestSpec) -> dict:
     return dict(
         forecast_horizon=spec.forecast_horizon,
         stride=spec.stride,
-        train_length=spec.train_length,
+        train_length=config["train_length"],
         start=spec.start,
         retrain=spec.retrain,
         overlap_end=spec.overlap_end,
@@ -121,6 +121,7 @@ def run_backtest(
             (
                 config["name"],
                 model_name,
+                config["train_length"],
                 str(sorted(config.get("hyperparams", {}).items())),
             )
         ).encode()
@@ -132,7 +133,7 @@ def run_backtest(
         past_covariates=past_cov,
         future_covariates=future_cov,
         data_transformers=dt or None,
-        **_hf_kwargs(spec),
+        **_hf_kwargs(config, spec),
     )
     forecasts = fc if isinstance(fc, list) else [fc]
 
