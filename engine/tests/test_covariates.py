@@ -1,59 +1,45 @@
-from datetime import datetime
+from unittest import TestCase
+from unittest.mock import patch
 
-from django.test import TestCase
-from engine.ingestion.get_all_covariates import get_all_covariates
-from engine.models import Holiday, WeatherObservation
+import pandas as pd
+from engine.series_utils import covariates_time_series, load_time_series
 
 
-class CovariatesTests(TestCase):
-    def test_get_all_covariates_pivots_weather_rows(self) -> None:
-        # Seed the EAV weather table + holidays via the ORM.
-        WeatherObservation.objects.bulk_create(
-            [
-                WeatherObservation(
-                    datetime=datetime(2024, 1, 1, 0),
-                    city="Alger",
-                    temperature_2m=10.0,
-                    relative_humidity_2m=60.0,
-                ),
-                WeatherObservation(
-                    datetime=datetime(2024, 1, 1, 0),
-                    city="Constantine",
-                    temperature_2m=11.0,
-                    relative_humidity_2m=55.0,
-                ),
-                WeatherObservation(
-                    datetime=datetime(2024, 1, 2, 0),
-                    city="Alger",
-                    temperature_2m=12.0,
-                    relative_humidity_2m=62.0,
-                ),
-                WeatherObservation(
-                    datetime=datetime(2024, 1, 2, 0),
-                    city="Constantine",
-                    temperature_2m=13.0,
-                    relative_humidity_2m=57.0,
-                ),
-            ]
+class SeriesUtilsTests(TestCase):
+    @patch("engine.series_utils.read_holidays")
+    @patch("engine.series_utils.read_weather")
+    def test_covariates_join_data_package_outputs(
+        self, read_weather, read_holidays
+    ) -> None:
+        index = pd.date_range(
+            "2024-01-01", periods=3, freq="h", name="datetime"
         )
-        Holiday.objects.bulk_create(
-            [
-                Holiday(datetime=datetime(2024, 1, 1, 0), is_holiday=True),
-                Holiday(datetime=datetime(2024, 1, 2, 0), is_holiday=False),
-            ]
+        read_weather.return_value = pd.DataFrame(
+            {"Alger_temperature_2m": [10.0, 11.0, 12.0]}, index=index
+        )
+        read_holidays.return_value = pd.DataFrame(
+            {"holidays": [True, False, False]}, index=index
         )
 
-        df = get_all_covariates(datetime(2024, 1, 1), datetime(2024, 1, 2))
+        series = covariates_time_series(
+            index[0],
+            index[-1],
+            feature_subset=("Alger_temperature_2m", "holidays"),
+        )
+        data = series.to_dataframe()
 
         self.assertEqual(
-            df.index.tolist(), [datetime(2024, 1, 1), datetime(2024, 1, 2)]
+            list(data.columns), ["Alger_temperature_2m", "holidays"]
         )
-        self.assertIn("Alger_temperature_2m", df.columns)
-        self.assertIn("Constantine_temperature_2m", df.columns)
-        self.assertIn("holidays", df.columns)
-        self.assertEqual(df.loc[datetime(2024, 1, 1), "Alger_temperature_2m"], 10.0)
-        self.assertEqual(
-            df.loc[datetime(2024, 1, 1), "Constantine_relative_humidity_2m"],
-            55.0,
-        )
-        self.assertEqual(df.loc[datetime(2024, 1, 2), "holidays"], False)
+        self.assertEqual(data.iloc[0]["Alger_temperature_2m"], 10.0)
+        self.assertEqual(data.iloc[1]["holidays"], 0.0)
+
+    @patch("engine.series_utils.read_load")
+    def test_load_series_uses_load_data_api(self, read_load) -> None:
+        index = pd.date_range("2024-01-01", periods=2, freq="h", name="datetime")
+        read_load.return_value = pd.DataFrame({"load_mw": [100.0, 110.0]}, index=index)
+
+        series = load_time_series(index[0], index[-1])
+
+        self.assertEqual(len(series), 2)
+        self.assertEqual(series.to_dataframe().iloc[-1]["load_mw"], 110.0)

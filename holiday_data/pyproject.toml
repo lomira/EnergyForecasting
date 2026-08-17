@@ -1,0 +1,13 @@
+[project]
+name = "holiday-data"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "holidays>=0.100",
+    "loguru>=0.7.3",
+    "pandas>=3.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.20,<0.12.0"]
+build-backend = "uv_build"

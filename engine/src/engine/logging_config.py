@@ -1,13 +1,12 @@
 import sys
 import time
 from contextlib import contextmanager
+from pathlib import Path
 
 from loguru import logger
 
-from engine.django_settings import ENGINE_DATA_ROOT
-
 # Rotating log file lives under <workspace>/data/engine.log
-LOG_FILE = ENGINE_DATA_ROOT / "engine.log"
+LOG_FILE = Path(__file__).resolve().parents[3] / "data" / "engine.log"
 
 
 @contextmanager

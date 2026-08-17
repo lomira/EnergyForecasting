@@ -1,19 +1,20 @@
-"""Bridge between Django ORM (ingestion) and Darts TimeSeries"""
+"""Bridge between the data packages and Darts TimeSeries."""
 
 from datetime import datetime
 
 import pandas as pd
 from darts import TimeSeries
 
-from engine.ingestion.get_all_covariates import get_all_covariates
-from engine.models import LoadObservation
+from holiday_data import read as read_holidays
+from load_data import read as read_load
+from weather_data import read as read_weather
 
 
 def load_time_series(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
 ) -> TimeSeries:
-    """Build a univariate Darts TimeSeries from ``LoadObservation``.
+    """Build a univariate Darts TimeSeries from the load-data store.
 
     Parameters
     ----------
@@ -21,19 +22,9 @@ def load_time_series(
         Filter range. If None, uses the full table.
     """
 
-    # Using queryset to optimize memony and not useless data from the database.
-    queryset = LoadObservation.objects.all().order_by("datetime")
-    if from_date is not None:
-        queryset = queryset.filter(datetime__gte=from_date)
-    if to_date is not None:
-        queryset = queryset.filter(datetime__lte=to_date)
-
-    records = list(queryset.values("datetime", "load_mw"))
-    if not records:
-        raise ValueError("No load observations found in the database.")
-
-    df = pd.DataFrame.from_records(records).sort_values("datetime")
-    return TimeSeries.from_dataframe(df, time_col="datetime", value_cols="load_mw")
+    return TimeSeries.from_dataframe(
+        read_load(from_date, to_date), value_cols="load_mw"
+    )
 
 
 def covariates_time_series(
@@ -52,7 +43,11 @@ def covariates_time_series(
         config's ``feature_subset`` to be applied at the covariate construction
         stage rather than inside the pipeline.
     """
-    df = get_all_covariates(from_date, to_date)
+    df = pd.concat(
+        [read_weather(from_date, to_date), read_holidays(from_date, to_date)],
+        axis=1,
+        join="outer",
+    )
     if df.empty:
         raise ValueError(f"No covariates found between {from_date} and {to_date}")
 
