@@ -1,4 +1,4 @@
-"""Generate hourly Algerian public-holiday flags."""
+"""Generate daily Algerian public-holiday flags."""
 
 from datetime import datetime
 from pathlib import Path
@@ -16,7 +16,7 @@ def sync(
     *,
     db_path: Path = DB_PATH,
 ) -> int:
-    """Generate and upsert one holiday flag per hour in the requested range."""
+    """Generate and upsert one holiday flag per day in the requested range."""
     if from_date > to_date:
         raise ValueError("from_date must not be after to_date")
     country_holidays = holidays.country_holidays(
@@ -24,8 +24,12 @@ def sync(
     )
     holiday_dates = set(country_holidays)
     records = [
-        (timestamp.isoformat(sep=" "), int(timestamp.date() in holiday_dates))
-        for timestamp in pd.date_range(from_date, to_date, freq="h")
+        (timestamp.date().isoformat(), int(timestamp.date() in holiday_dates))
+        for timestamp in pd.date_range(
+            pd.Timestamp(from_date).normalize(),
+            pd.Timestamp(to_date).normalize(),
+            freq="D",
+        )
     ]
     _upsert(records, db_path=db_path)
     logger.info(
