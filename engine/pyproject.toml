@@ -23,7 +23,7 @@ dependencies = [
     "loguru>=0.7.3",
     "holidays>=0.100",
     "lightgbm>=4.6.0",
-    "darts[torch]>=0.46.0",
+    "darts[torch, lightgbm]>=0.46.0",
 ]
 
 

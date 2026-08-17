@@ -3,6 +3,7 @@ FROM nvidia/cuda:13.2.1-runtime-ubuntu24.04
 RUN apt-get update && apt-get install -y \
     curl \
     git \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 
