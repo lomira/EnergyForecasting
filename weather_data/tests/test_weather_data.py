@@ -101,6 +101,4 @@ class WeatherDataTests(TestCase):
             self.assertTrue(db_path.exists())
             self.assertEqual(len(data), 1)
             self.assertEqual(data.iloc[0]["Alger_temperature_2m"], 12.0)
-            self.assertEqual(
-                data.iloc[0]["Constantine_relative_humidity_2m"], 55.0
-            )
+            self.assertEqual(data.iloc[0]["Constantine_relative_humidity_2m"], 55.0)

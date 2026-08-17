@@ -47,8 +47,6 @@ class LoadDataTests(TestCase):
             )
 
     def test_negative_load_is_rejected(self) -> None:
-        source = pd.DataFrame(
-            {"Date": [pd.Timestamp("2024-01-01")], "1h": [-1.0]}
-        )
+        source = pd.DataFrame({"Date": [pd.Timestamp("2024-01-01")], "1h": [-1.0]})
         with self.assertRaisesRegex(ValueError, "non-negative"):
             format_load_data(source)

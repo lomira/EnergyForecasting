@@ -11,9 +11,7 @@ class SeriesUtilsTests(TestCase):
     def test_covariates_join_data_package_outputs(
         self, read_weather, read_holidays
     ) -> None:
-        index = pd.date_range(
-            "2024-01-01", periods=3, freq="h", name="datetime"
-        )
+        index = pd.date_range("2024-01-01", periods=3, freq="h", name="datetime")
         read_weather.return_value = pd.DataFrame(
             {"Alger_temperature_2m": [10.0, 11.0, 12.0]}, index=index
         )
@@ -28,9 +26,7 @@ class SeriesUtilsTests(TestCase):
         )
         data = series.to_dataframe()
 
-        self.assertEqual(
-            list(data.columns), ["Alger_temperature_2m", "holidays"]
-        )
+        self.assertEqual(list(data.columns), ["Alger_temperature_2m", "holidays"])
         self.assertEqual(data.iloc[0]["Alger_temperature_2m"], 10.0)
         self.assertEqual(data.iloc[1]["holidays"], 0.0)
 

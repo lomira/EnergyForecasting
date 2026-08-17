@@ -22,6 +22,4 @@ class TrainingLengthTests(TestCase):
             last_points_only=True,
         )
 
-        self.assertEqual(
-            _hf_kwargs({"train_length": 123}, spec)["train_length"], 123
-        )
+        self.assertEqual(_hf_kwargs({"train_length": 123}, spec)["train_length"], 123)
