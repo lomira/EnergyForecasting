@@ -41,7 +41,7 @@ LIGHTGBM_CONFIG_NOEXOGENEOUS = {
             "tz": "UTC",
         },
     },
-    "feature_subset": ("",),
+    "feature_subset": (),
     "target_transform_chain": (),
     "past_cov_transform_chain": (),
     "future_cov_transform_chain": (),

@@ -17,7 +17,7 @@ TFT_CONFIG = {
         "num_attention_heads": 4,
         "dropout": 0.1,
         "batch_size": 64,
-        "n_epochs": 20,
+        "n_epochs": 2,
         "add_relative_index": True,
         "add_encoders": {
             "cyclic": {"future": ["hour", "dayofweek"]},
@@ -25,7 +25,7 @@ TFT_CONFIG = {
             "tz": "UTC",
         },
     },
-    "feature_subset": ("temperature_2m",),
+    "feature_subset": ("Alger_temperature_2m",),
     "target_transform_chain": (Scaler(RobustScaler()),),
     "past_cov_transform_chain": (
         RollingLagTransformer(windows=(24, 168), stats=("mean", "std"), lag=24),
