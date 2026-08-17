@@ -14,6 +14,7 @@ from darts import TimeSeries
 
 from engine.darts_pipeline.builder import build_data_transformers, build_model
 from engine.darts_pipeline.spec import BacktestSpec
+from engine.logging_config import logger
 
 
 def data_fingerprint(series: TimeSeries, decimals: int = 2) -> str:
@@ -138,7 +139,7 @@ def run_backtest(
     forecasts = fc if isinstance(fc, list) else [fc]
 
     scores = [wape(f, series.slice_intersect(f)) for f in forecasts]
-    return BacktestResult(
+    result = BacktestResult(
         forecasts=forecasts,
         fold_scores=scores,
         aggregate=float(np.nanmean(scores)),
@@ -146,3 +147,23 @@ def run_backtest(
         config_hash=config_hash,
         data_fp=fp,
     )
+    fold_summary = ""
+    if result.fold_scores:
+        fold_summary = (
+            f"\n  Fold scores:   min={min(result.fold_scores):.4f}, "
+            f"max={max(result.fold_scores):.4f}, "
+            f"median={sorted(result.fold_scores)[len(result.fold_scores) // 2]:.4f}"
+        )
+    logger.info(
+        f"\n{'=' * 60}\n"
+        f"  {model_name.removesuffix('Model')} backtest results\n"
+        f"{'=' * 60}\n"
+        f"  Origins:       {len(result.forecasts)}\n"
+        f"  Aggregate WAPE: {result.aggregate:.4f} ({result.aggregate * 100:.2f}%)\n"
+        f"  Spec hash:     {result.spec_hash}\n"
+        f"  Config hash:   {result.config_hash}\n"
+        f"  Data fp:       {result.data_fp}"
+        f"{fold_summary}\n"
+        f"{'=' * 60}"
+    )
+    return result

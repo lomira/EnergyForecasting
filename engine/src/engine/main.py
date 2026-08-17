@@ -85,25 +85,6 @@ if __name__ == "__main__":
 
     logger.info("Running LightGBM backtest (this may take a moment)…")
     result = run_backtest(model_config, spec, series, future_cov=future_cov)
-    logger.info(
-        f"Backtest complete: {len(result.forecasts)} origins, "
-        f"aggregate WAPE = {result.aggregate:.4f}"
-    )
-    print(f"\n{'=' * 60}")
-    print("  LightGBM backtest results")
-    print(f"{'=' * 60}")
-    print(f"  Origins:       {len(result.forecasts)}")
-    print(f"  Aggregate WAPE: {result.aggregate:.4f} ({result.aggregate * 100:.2f}%)")
-    print(f"  Spec hash:     {result.spec_hash}")
-    print(f"  Config hash:   {result.config_hash}")
-    print(f"  Data fp:       {result.data_fp}")
-    if result.fold_scores:
-        print(
-            f"  Fold scores:   min={min(result.fold_scores):.4f}, "
-            f"max={max(result.fold_scores):.4f}, "
-            f"median={sorted(result.fold_scores)[len(result.fold_scores) // 2]:.4f}"
-        )
-    print(f"{'=' * 60}\n")
 
     # --- One-shot forecast (fit on the model's training window, predict 24h ahead) ---
     # The forecast needs future covariates for the 24h beyond the data end
@@ -136,12 +117,11 @@ if __name__ == "__main__":
     fcst_cov = TimeSeries.from_dataframe(pd.concat((history_cov_df, fcst_cov_df)))
     fcst = model.predict(n=24, future_covariates=fcst_cov)
     logger.info(
-        f"Forecast: {len(fcst)} steps, span={fcst.start_time()} -> {fcst.end_time()}"
+        f"\n{'=' * 60}\n"
+        f"  24-hour ahead forecast\n"
+        f"{'=' * 60}\n"
+        f"{fcst.to_dataframe().to_string()}\n"
+        f"{'=' * 60}"
     )
-    print(f"\n{'=' * 60}")
-    print("  24-hour ahead forecast")
-    print(f"{'=' * 60}")
-    print(fcst.to_dataframe().to_string())
-    print(f"{'=' * 60}\n")
 
     logger.info("Pipeline complete.")
