@@ -1,7 +1,5 @@
 """Bridge between the data packages and Darts TimeSeries."""
 
-from datetime import datetime
-
 import pandas as pd
 from darts import TimeSeries
 
@@ -10,9 +8,9 @@ from load_data import read as read_load
 from weather_data import read as read_weather
 
 
-def load_time_series(
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
+def get_load_ts(
+    from_date: pd.Timestamp | None = None,
+    to_date: pd.Timestamp | None = None,
 ) -> TimeSeries:
     """Build a univariate Darts TimeSeries from the load-data store.
 
@@ -28,8 +26,8 @@ def load_time_series(
 
 
 def covariates_time_series(
-    from_date: datetime,
-    to_date: datetime,
+    from_date: pd.Timestamp | int,
+    to_date: pd.Timestamp | int,
     feature_subset: tuple[str] = (),
 ) -> TimeSeries:
     """Build a multivariate Darts TimeSeries from the covariate store.
@@ -43,6 +41,9 @@ def covariates_time_series(
         config's ``feature_subset`` to be applied at the covariate construction
         stage rather than inside the pipeline.
     """
+    if any(isinstance(x, int) for x in (from_date, to_date)):
+        raise ValueError("Not implemented")
+
     df = pd.concat(
         [read_weather(from_date, to_date), read_holidays(from_date, to_date)],
         axis=1,

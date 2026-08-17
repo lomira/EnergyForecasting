@@ -1,40 +1,26 @@
-from datetime import datetime
-from pathlib import Path
+import pandas as pd
+from darts import TimeSeries
 
+from engine.darts_pipeline import BacktestSpec, build_model, run_backtest
+from engine.ingestion.temp_utils import populate_dbs
 from engine.logging_config import logger, setup_logging
-from holiday_data import sync as sync_holidays
-from load_data import get_date_range, import_excel
-from weather_data import sync as sync_weather
-
-WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+from engine.model_configs import REGISTERED_MODELS
+from engine.series_utils import covariates_time_series, get_load_ts
 
 setup_logging(level="INFO")
 
-if __name__ == "__main__":
-    # region Ingestion phase$
-    import_excel(
-        file_path=WORKSPACE_ROOT / "data" / "raw" / "excel" / "BDD_E.xlsx",
-        sheet_name="Feuil1",
-    )
 
-    start_date, end_date = get_date_range()
-    start_date = datetime(2016, 1, 1)  # noqa: DTZ001 - time series are tz-naive
-    sync_holidays(start_date, end_date)
-    sync_weather(start_date, end_date)
+if __name__ == "__main__":
+    populate_dbs()
 
     # region Select the model
-    from engine.model_configs import REGISTERED_MODELS
-
     model_config = REGISTERED_MODELS["lightgbm_nex"]
 
     # region Preprocessing
-    import pandas as pd
-    from darts import TimeSeries
-
-    from engine.series_utils import covariates_time_series, load_time_series
-
     # Build Darts TimeSeries from the database
-    series = load_time_series(start_date, end_date)
+    series = get_load_ts()
+    start_date, end_date = series.start_time(), series.end_time()
+
     logger.info(
         f"Target series: {len(series)} steps, freq={series.freq}, "
         f"span={series.start_time()} -> {series.end_time()}"
@@ -51,8 +37,6 @@ if __name__ == "__main__":
     )
 
     # region Backtest
-    from engine.darts_pipeline import BacktestSpec, build_model, run_backtest
-
     spec = BacktestSpec(
         forecast_horizon=24,
         stride=24 * 7,  # 1 week between origins
