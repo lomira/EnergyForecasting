@@ -28,7 +28,7 @@ def get_load_ts(
 def covariates_time_series(
     from_date: pd.Timestamp | int,
     to_date: pd.Timestamp | int,
-    feature_subset: tuple[str] = (),
+    feature_subset: tuple[str] | None = None,
 ) -> TimeSeries:
     """Build a multivariate Darts TimeSeries from the covariate store.
 
@@ -41,11 +41,9 @@ def covariates_time_series(
         config's ``feature_subset`` to be applied at the covariate construction
         stage rather than inside the pipeline.
     """
-    if any(isinstance(x, int) for x in (from_date, to_date)):
-        raise ValueError("Not implemented")
 
     df = pd.concat(
-        [read_weather(from_date, to_date), read_holidays(from_date, to_date)],
+        [read_weather(from_date, to_date), read_holidays(from_date, to_date)],  # ty: ignore[invalid-argument-type]
         axis=1,
         join="outer",
     )

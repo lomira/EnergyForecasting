@@ -13,17 +13,18 @@ setup_logging(level="INFO")
 if __name__ == "__main__":
     populate_dbs()
 
-    # region Select the model
+    #  -- SELECT THE MODEL ---------
     model_config = REGISTERED_MODELS["lightgbm_nex"]
 
-    # region Preprocessing
+    #  -- PRE PROCESSING ---------
+
     # Build Darts TimeSeries from the database
     series = get_load_ts()
     start_date, end_date = series.start_time(), series.end_time()
 
     logger.info(
         f"Target series: {len(series)} steps, freq={series.freq}, "
-        f"span={series.start_time()} -> {series.end_time()}"
+        f"span={start_date} -> {end_date}"
     )
 
     future_cov = covariates_time_series(
@@ -36,18 +37,19 @@ if __name__ == "__main__":
         f"{future_cov.n_components} component(s)"
     )
 
-    # region Backtest
+    #  -- BACKTEST ---------
     spec = BacktestSpec(
         forecast_horizon=24,
         stride=24 * 7,  # 1 week between origins
         retrain=True,
-        start=pd.Timestamp("2020-01-01"),
+        start=pd.Timestamp(year=2020, month=1, day=1),  # ty: ignore[invalid-argument-type]
     )
 
     logger.info("Running LightGBM backtest (this may take a moment)…")
     result = run_backtest(model_config, spec, series, future_cov=future_cov)
 
-    # --- One-shot forecast (fit on the model's training window, predict 24h ahead) ---
+    #  -- FORECASTING ---------
+    # Predict only 24h to test
     # The forecast needs future covariates for the 24h beyond the data end
     train_length = model_config["train_length"]
     training_series = series[-train_length:]
@@ -59,7 +61,7 @@ if __name__ == "__main__":
     model.fit(training_series, future_covariates=training_cov)
     # Build future covariates beyond the training data end for the forecast horizon.
     # Models without explicit future-covariate lags only need the forecast horizon.
-    fcst_start = series.end_time() + pd.Timedelta(hours=1)
+    fcst_start = end_date + pd.Timedelta(hours=1)  # ty: ignore[unsupported-operator]
     extra_hours = 24 + max(
         model_config["hyperparams"].get("lags_future_covariates", [0])
     )
@@ -73,10 +75,10 @@ if __name__ == "__main__":
     for col in fcst_cov_df.columns:
         fcst_cov_df[col] = last_cov[col].values[0]
     history_hours = max(getattr(model, "input_chunk_length", 1), 1)
-    cov_start = series.end_time() - pd.Timedelta(hours=history_hours - 1)
+    cov_start = end_date - pd.Timedelta(hours=history_hours - 1)  # ty: ignore[unsupported-operator]
     history_cov_df = future_cov.slice(cov_start, series.end_time()).to_dataframe()
     fcst_cov = TimeSeries.from_dataframe(pd.concat((history_cov_df, fcst_cov_df)))
-    fcst = model.predict(n=24, future_covariates=fcst_cov)
+    fcst: TimeSeries = model.predict(n=24, future_covariates=fcst_cov)  # ty: ignore[invalid-assignment]
     logger.info(
         f"\n{'=' * 60}\n"
         f"  24-hour ahead forecast\n"

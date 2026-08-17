@@ -7,10 +7,10 @@ No fitted state ever lives in a config dict.
 from typing import Any
 
 from darts.dataprocessing.pipeline import Pipeline
-from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 
-def build_model(config: dict, **extra: Any) -> ForecastingModel:
+def build_model(config: dict, **extra: Any) -> GlobalForecastingModel:
     """Unfitted Darts model from a config dict.
 
     Parameters
@@ -20,7 +20,7 @@ def build_model(config: dict, **extra: Any) -> ForecastingModel:
     extra : Any
         Additional kwargs merged into hyperparams (for Optuna trials).
     """
-    model_cls: type[ForecastingModel] = config["model_cls"]
+    model_cls: type[GlobalForecastingModel] = config["model_cls"]
     hyperparams = {**dict(config.get("hyperparams", {})), **extra}
     return model_cls(**hyperparams)
 
