@@ -1,12 +1,12 @@
-"""THE backtest path using Darts native ``historical_forecasts``.
+"""Darts-native backtesting and one-shot forecasting.
 
-Untransformed series go in; original-scale forecasts come out.
-Every result is stamped with ``(spec_hash, config_hash, data_fp)`` for future save load efficienty
+Untransformed series go in; original-scale forecasts come out. Backtest results
+are stamped with ``(spec_hash, config_hash, data_fp)`` for future persistence.
 """
 
 import hashlib
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -66,16 +66,16 @@ def wape(forecast: TimeSeries, actual: TimeSeries) -> float:
 
 
 def _hf_kwargs(config: dict, spec: BacktestSpec) -> dict:
-    return dict(
-        forecast_horizon=spec.forecast_horizon,
-        stride=spec.stride,
-        train_length=config["train_length"],
-        start=spec.start,
-        retrain=spec.retrain,
-        overlap_end=spec.overlap_end,
-        last_points_only=spec.last_points_only,
-        verbose=False,
-    )
+    return {
+        "forecast_horizon": spec.forecast_horizon,
+        "stride": spec.stride,
+        "train_length": config["train_length"],
+        "start": spec.start,
+        "retrain": spec.retrain,
+        "overlap_end": spec.overlap_end,
+        "last_points_only": spec.last_points_only,
+        "verbose": False,
+    }
 
 
 def run_backtest(
@@ -167,3 +167,72 @@ def run_backtest(
         f"{'=' * 60}"
     )
     return result
+
+
+def run_forecast(
+    config: dict,
+    series: TimeSeries,
+    horizon: int,
+    *,
+    past_cov: TimeSeries | None = None,
+    future_cov: TimeSeries | None = None,
+    future_scenario: TimeSeries | None = None,
+) -> TimeSeries:
+    """Fit a configured model on its training window and forecast ahead."""
+    if horizon < 1:
+        raise ValueError("horizon must be positive")
+
+    train_length = config["train_length"]
+    if len(series) < train_length:
+        raise ValueError(
+            f"series has {len(series)} steps; model requires {train_length}"
+        )
+    if past_cov is not None and past_cov.freq != series.freq:
+        raise ValueError("past_cov freq mismatch")
+    if future_cov is not None and future_cov.freq != series.freq:
+        raise ValueError("future_cov freq mismatch")
+    if future_scenario is not None:
+        if future_cov is None:
+            raise ValueError("future_scenario requires historical future_cov")
+        if future_scenario.freq != series.freq:
+            raise ValueError("future_scenario freq mismatch")
+        future_cov = future_cov.slice(
+            future_cov.start_time(), future_scenario.start_time() - series.freq
+        ).append(future_scenario)
+
+    training_series = series[-train_length:]
+    transformers = build_data_transformers(config)
+
+    target_transformer = transformers.get("series")
+    transformed_series = (
+        target_transformer.fit_transform(training_series)
+        if target_transformer
+        else training_series
+    )
+
+    transformed_covariates: dict[str, TimeSeries | None] = {}
+    for name, covariates in (
+        ("past_covariates", past_cov),
+        ("future_covariates", future_cov),
+    ):
+        transformer = transformers.get(name)
+        if covariates is not None and transformer is not None:
+            transformer.fit(covariates.slice_intersect(training_series))
+            covariates = cast(TimeSeries, transformer.transform(covariates))
+        transformed_covariates[name] = covariates
+
+    model = build_model(config)
+    model.fit(transformed_series, **transformed_covariates)
+    forecast = cast(
+        TimeSeries,
+        model.predict(n=horizon, **transformed_covariates),
+    )
+    if target_transformer is not None:
+        forecast = cast(
+            TimeSeries,
+            target_transformer.inverse_transform(
+                forecast,
+                insample=transformed_series,
+            ),
+        )
+    return forecast

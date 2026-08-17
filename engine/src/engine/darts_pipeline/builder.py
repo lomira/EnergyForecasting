@@ -37,14 +37,14 @@ def build_data_transformers(config: dict) -> dict[str, Pipeline]:
 
     target_chain = config.get("target_transform_chain", ())
     if target_chain:
-        dt["series"] = Pipeline(list(target_chain))
+        dt["series"] = Pipeline(list(target_chain), copy=True)
 
     past_chain = config.get("past_cov_transform_chain", ())
     if past_chain:
-        dt["past_covariates"] = Pipeline(list(past_chain))
+        dt["past_covariates"] = Pipeline(list(past_chain), copy=True)
 
     fut_chain = config.get("future_cov_transform_chain", ())
     if fut_chain:
-        dt["future_covariates"] = Pipeline(list(fut_chain))
+        dt["future_covariates"] = Pipeline(list(fut_chain), copy=True)
 
     return dt

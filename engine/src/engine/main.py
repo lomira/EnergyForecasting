@@ -1,11 +1,14 @@
 import pandas as pd
-from darts import TimeSeries
 
-from engine.darts_pipeline import BacktestSpec, build_model, run_backtest
+from engine.darts_pipeline import BacktestSpec, build_model, run_backtest, run_forecast
 from engine.ingestion.temp_utils import populate_dbs
 from engine.logging_config import logger, setup_logging
 from engine.model_configs import REGISTERED_MODELS
-from engine.series_utils import covariates_time_series, get_load_ts
+from engine.scenario.future_scenario import random_future_scenario
+from engine.series_utils import (
+    covariates_time_series,
+    get_load_ts,
+)
 
 setup_logging(level="INFO")
 
@@ -14,7 +17,8 @@ if __name__ == "__main__":
     populate_dbs()
 
     #  -- SELECT THE MODEL ---------
-    model_config = REGISTERED_MODELS["lightgbm_nex"]
+    model_config = REGISTERED_MODELS["tft_V1"]
+    forecast_horizon = 24
 
     #  -- PRE PROCESSING ---------
 
@@ -39,52 +43,37 @@ if __name__ == "__main__":
 
     #  -- BACKTEST ---------
     spec = BacktestSpec(
-        forecast_horizon=24,
+        forecast_horizon=forecast_horizon,
         stride=24 * 7,  # 1 week between origins
         retrain=True,
         start=pd.Timestamp(year=2020, month=1, day=1),  # ty: ignore[invalid-argument-type]
     )
 
-    logger.info("Running LightGBM backtest (this may take a moment)…")
+    logger.info("Running backtest (this may take a moment)…")
     result = run_backtest(model_config, spec, series, future_cov=future_cov)
 
-    #  -- FORECASTING ---------
-    # Predict only 24h to test
-    # The forecast needs future covariates for the 24h beyond the data end
-    train_length = model_config["train_length"]
-    training_series = series[-train_length:]
-    training_cov = future_cov.slice_intersect(training_series)
-    logger.info(
-        f"Fitting LightGBM on the last {train_length} steps and forecasting 24h ahead…"
-    )
-    model = build_model(model_config)
-    model.fit(training_series, future_covariates=training_cov)
-    # Build future covariates beyond the training data end for the forecast horizon.
-    # Models without explicit future-covariate lags only need the forecast horizon.
-    fcst_start = end_date + pd.Timedelta(hours=1)  # ty: ignore[unsupported-operator]
-    extra_hours = 24 + max(
-        model_config["hyperparams"].get("lags_future_covariates", [0])
-    )
-    fcst_end = fcst_start + pd.Timedelta(hours=extra_hours - 1)
-    fcst_dates = pd.date_range(fcst_start, fcst_end, freq="h")
-    # Use the last available covariate values as a proxy for the forecast horizon
-    last_cov = future_cov.to_dataframe().iloc[-1:]
-    fcst_cov_df = pd.DataFrame(
-        index=fcst_dates, columns=future_cov.to_dataframe().columns
-    )
-    for col in fcst_cov_df.columns:
-        fcst_cov_df[col] = last_cov[col].values[0]
-    history_hours = max(getattr(model, "input_chunk_length", 1), 1)
-    cov_start = end_date - pd.Timedelta(hours=history_hours - 1)  # ty: ignore[unsupported-operator]
-    history_cov_df = future_cov.slice(cov_start, series.end_time()).to_dataframe()
-    fcst_cov = TimeSeries.from_dataframe(pd.concat((history_cov_df, fcst_cov_df)))
-    fcst: TimeSeries = model.predict(n=24, future_covariates=fcst_cov)  # ty: ignore[invalid-assignment]
-    logger.info(
-        f"\n{'=' * 60}\n"
-        f"  24-hour ahead forecast\n"
-        f"{'=' * 60}\n"
-        f"{fcst.to_dataframe().to_string()}\n"
-        f"{'=' * 60}"
+    #  -- FORECAST ---------
+    forecast_start = end_date - pd.Timedelta(hours=forecast_horizon - 1)
+    max_future_covariate_lag = build_model(model_config).extreme_lags[5] or 0
+    forecast_end = (
+        forecast_start
+        + max(forecast_horizon - 1, max_future_covariate_lag) * series.freq
     )
 
-    logger.info("Pipeline complete.")
+    forecast_training_series = series.drop_after(forecast_start)
+    future_scenario = random_future_scenario(
+        model_config["feature_subset"],
+        forecast_start,
+        forecast_end,
+    )
+    logger.info(f"Fitting and forecasting from {forecast_start} to {forecast_end}")
+    fcst = run_forecast(
+        model_config,
+        forecast_training_series,
+        forecast_horizon,
+        future_cov=future_cov,
+        future_scenario=future_scenario,
+    )
+    logger.info(fcst.to_dataframe())
+
+    logger.success("Pipeline complete.")
