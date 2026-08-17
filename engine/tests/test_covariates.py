@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import pandas as pd
-from engine.series_utils import covariates_time_series, load_time_series
+from engine.series_utils import covariates_time_series, get_load_ts
 
 
 class SeriesUtilsTests(TestCase):
@@ -35,7 +35,7 @@ class SeriesUtilsTests(TestCase):
         index = pd.date_range("2024-01-01", periods=2, freq="h", name="datetime")
         read_load.return_value = pd.DataFrame({"load_mw": [100.0, 110.0]}, index=index)
 
-        series = load_time_series(index[0], index[-1])
+        series = get_load_ts(index[0], index[-1])
 
         self.assertEqual(len(series), 2)
         self.assertEqual(series.to_dataframe().iloc[-1]["load_mw"], 110.0)

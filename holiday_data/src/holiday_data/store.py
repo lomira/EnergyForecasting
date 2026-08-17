@@ -3,7 +3,6 @@
 import sqlite3
 from collections.abc import Generator
 from contextlib import closing, contextmanager
-from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -39,8 +38,8 @@ def _upsert(records: list[tuple[str, int]], *, db_path: Path = DB_PATH) -> None:
 
 
 def read(
-    from_date: datetime,
-    to_date: datetime,
+    from_date: pd.Timestamp,
+    to_date: pd.Timestamp,
     *,
     db_path: Path = DB_PATH,
 ) -> pd.DataFrame:
@@ -55,8 +54,8 @@ def read(
             """,
             connection,
             params=(
-                pd.Timestamp(from_date).date().isoformat(),
-                pd.Timestamp(to_date).date().isoformat(),
+                from_date.date().isoformat(),
+                to_date.date().isoformat(),
             ),
             parse_dates=["date"],
         )

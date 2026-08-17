@@ -3,7 +3,6 @@
 import sqlite3
 from collections.abc import Generator
 from contextlib import closing, contextmanager
-from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -38,7 +37,7 @@ def _upsert(records: list[tuple[str, float]], *, db_path: Path = DB_PATH) -> Non
         )
 
 
-def get_date_range(*, db_path: Path = DB_PATH) -> tuple[datetime, datetime]:
+def get_date_range(*, db_path: Path = DB_PATH) -> tuple[pd.Timestamp, pd.Timestamp]:
     """Return the first and last stored timestamps."""
     with _database(db_path) as connection:
         row = connection.execute(
@@ -46,12 +45,12 @@ def get_date_range(*, db_path: Path = DB_PATH) -> tuple[datetime, datetime]:
         ).fetchone()
     if row is None or row[0] is None or row[1] is None:
         raise ValueError("No load observations found in the database")
-    return pd.Timestamp(row[0]).to_pydatetime(), pd.Timestamp(row[1]).to_pydatetime()
+    return pd.Timestamp(row[0]), pd.Timestamp(row[1])
 
 
 def read(
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
+    from_date: pd.Timestamp | None = None,
+    to_date: pd.Timestamp | None = None,
     *,
     db_path: Path = DB_PATH,
 ) -> pd.DataFrame:

@@ -16,7 +16,7 @@ def get_load_ts(
 
     Parameters
     ----------
-    from_date, to_date : datetime, optional
+    from_date, to_date : pd.Timestamp, optional
         Filter range. If None, uses the full table.
     """
 
@@ -34,7 +34,7 @@ def covariates_time_series(
 
     Parameters
     ----------
-    from_date, to_date : datetime
+    from_date, to_date : pd.Timestamp or int
         Date range for covariates.
     feature_subset : tuple of str, optional
         If provided, only these columns are included. This enables the model

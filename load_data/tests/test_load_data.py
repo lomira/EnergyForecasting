@@ -41,9 +41,15 @@ class LoadDataTests(TestCase):
             self.assertEqual(
                 get_date_range(db_path=db_path),
                 (
-                    pd.Timestamp("2024-01-01 00:00").to_pydatetime(),
-                    pd.Timestamp("2024-01-01 01:00").to_pydatetime(),
+                    pd.Timestamp("2024-01-01 00:00"),
+                    pd.Timestamp("2024-01-01 01:00"),
                 ),
+            )
+            self.assertTrue(
+                all(
+                    isinstance(value, pd.Timestamp)
+                    for value in get_date_range(db_path=db_path)
+                )
             )
 
     def test_negative_load_is_rejected(self) -> None:

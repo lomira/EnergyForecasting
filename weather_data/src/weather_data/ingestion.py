@@ -1,7 +1,6 @@
 """Fetch weather observations from Open-Meteo."""
 
 from collections.abc import Mapping
-from datetime import datetime
 from pathlib import Path
 from typing import cast
 
@@ -32,8 +31,8 @@ def _fetch_source(
     url: str,
     city: Mapping[str, object],
     api_params: tuple[str, ...],
-    from_date: datetime,
-    to_date: datetime,
+    from_date: pd.Timestamp,
+    to_date: pd.Timestamp,
 ) -> pd.DataFrame:
     hourly = openmeteo.weather_api(
         url,
@@ -63,8 +62,8 @@ def _fetch_source(
 
 
 def _fetch_rows(
-    from_date: datetime,
-    to_date: datetime,
+    from_date: pd.Timestamp,
+    to_date: pd.Timestamp,
     cache_path: Path,
 ) -> dict[tuple[pd.Timestamp, str], dict[str, object]]:
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -98,8 +97,8 @@ def _fetch_rows(
 
 
 def sync(
-    from_date: datetime,
-    to_date: datetime,
+    from_date: pd.Timestamp,
+    to_date: pd.Timestamp,
     *,
     db_path: Path = DB_PATH,
     cache_path: Path = CACHE_PATH,

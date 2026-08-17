@@ -1,6 +1,5 @@
 """Generate daily Algerian public-holiday flags."""
 
-from datetime import datetime
 from pathlib import Path
 
 import holidays
@@ -11,8 +10,8 @@ from holiday_data.store import DB_PATH, _upsert
 
 
 def sync(
-    from_date: datetime,
-    to_date: datetime,
+    from_date: pd.Timestamp,
+    to_date: pd.Timestamp,
     *,
     db_path: Path = DB_PATH,
 ) -> int:
@@ -26,8 +25,8 @@ def sync(
     records = [
         (timestamp.date().isoformat(), int(timestamp.date() in holiday_dates))
         for timestamp in pd.date_range(
-            pd.Timestamp(from_date).normalize(),
-            pd.Timestamp(to_date).normalize(),
+            from_date.normalize(),
+            to_date.normalize(),
             freq="D",
         )
     ]
