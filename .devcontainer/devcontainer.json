@@ -13,8 +13,8 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        "astral-sh.ty",
         "ms-python.python",
-        "ms-python.vscode-pylance",
         "tamasfe.even-better-toml",
         "mechatroner.rainbow-csv",
         "charliermarsh.ruff"
@@ -22,6 +22,7 @@
       "settings": {
         "[python]": {
           "defaultInterpreterPath": "${getWorkspaceFolder}/.venv/bin/python",
+          "python.languageServer": "None",
           "editor.defaultFormatter": "charliermarsh.ruff",
           "editor.formatOnSave": true,
           "editor.codeActionsOnSave": {

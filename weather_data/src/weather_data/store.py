@@ -37,13 +37,11 @@ def _upsert(
 ) -> None:
     columns = ("datetime", "city", *WEATHER_API_PARAMS)
     quoted_columns = ", ".join(f'"{name}"' for name in columns)
-    updates = ", ".join(
-        f'"{name}" = excluded."{name}"' for name in WEATHER_API_PARAMS
-    )
+    updates = ", ".join(f'"{name}" = excluded."{name}"' for name in WEATHER_API_PARAMS)
     sql = (
         f"INSERT INTO weather_observation ({quoted_columns}) "
         f"VALUES ({', '.join('?' for _ in columns)}) "
-        f'ON CONFLICT (datetime, city) DO UPDATE SET {updates}'
+        f"ON CONFLICT (datetime, city) DO UPDATE SET {updates}"
     )
     records = [
         (

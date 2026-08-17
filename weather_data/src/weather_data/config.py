@@ -21,6 +21,7 @@ WEATHER_API_PARAMS = tuple(
         *(f"{metric}_previous_day{day}" for day in range(1, WEATHER_PREVIOUS_DAYS + 1)),
     )
 )
+
 CITIES = (
     {
         "name": "Alger",
