@@ -4,7 +4,7 @@ from pathlib import Path
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 DB_PATH = WORKSPACE_ROOT / "db" / "weather.sqlite3"
-CACHE_PATH = WORKSPACE_ROOT / "data" / ".cache_meteo"
+CACHE_PATH = WORKSPACE_ROOT / "db" / ".cache_meteo"
 WEATHER_PREVIOUS_DAYS = 2
 WEATHER_METRICS = (
     "temperature_2m",

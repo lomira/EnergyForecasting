@@ -14,6 +14,7 @@ from weather_data.config import (
     CITIES,
     DB_PATH,
     WEATHER_API_PARAMS,
+    WEATHER_METRICS,
 )
 from weather_data.store import _upsert
 
@@ -22,6 +23,75 @@ def _log_cache_hit(response, *args, **kwargs):
     status = "CACHE HIT" if getattr(response, "from_cache", False) else "API CALL"
     logger.debug(f"[{status}] {response.request.method} {response.request.url}")
     return response
+
+
+def _fetch_source(
+    openmeteo: openmeteo_requests.Client,
+    url: str,
+    city: dict[str, object],
+    api_params: tuple[str, ...],
+    from_date: datetime,
+    to_date: datetime,
+) -> pd.DataFrame:
+    hourly = openmeteo.weather_api(
+        url,
+        params={
+            "latitude": city["lat"],
+            "longitude": city["lon"],
+            "hourly": api_params,
+            "start_date": from_date.strftime("%Y-%m-%d"),
+            "end_date": to_date.strftime("%Y-%m-%d"),
+        },
+    )[0].Hourly()
+    datetimes = pd.date_range(
+        start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
+        end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
+        freq=pd.Timedelta(seconds=hourly.Interval()),
+        inclusive="left",
+    ).tz_localize(None)
+    return pd.DataFrame(
+        {
+            api_param: hourly.Variables(index).ValuesAsNumpy()
+            for index, api_param in enumerate(api_params)
+        },
+        index=datetimes,
+    )
+
+
+def _fetch_rows(
+    from_date: datetime,
+    to_date: datetime,
+    cache_path: Path,
+) -> dict[tuple[pd.Timestamp, str], dict[str, object]]:
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_session = requests_cache.CachedSession(str(cache_path), expire_after=-1)
+    cache_session.hooks["response"].append(_log_cache_hit)
+    openmeteo = openmeteo_requests.Client(
+        session=retry(cache_session, retries=5, backoff_factor=0.2)
+    )
+    rows: dict[tuple[pd.Timestamp, str], dict[str, object]] = {}
+    sources = (
+        ("https://archive-api.open-meteo.com/v1/archive", WEATHER_METRICS),
+        (
+            "https://previous-runs-api.open-meteo.com/v1/forecast",
+            tuple(
+                param
+                for param in WEATHER_API_PARAMS
+                if param not in WEATHER_METRICS
+            ),
+        ),
+    )
+    for city in CITIES:
+        for url, api_params in sources:
+            for timestamp, values in _fetch_source(
+                openmeteo, url, city, api_params, from_date, to_date
+            ).iterrows():
+                key = (timestamp, str(city["name"]))
+                row = rows.setdefault(
+                    key, {"datetime": timestamp, "city": city["name"]}
+                )
+                row.update(values.to_dict())
+    return rows
 
 
 def sync(
@@ -34,41 +104,7 @@ def sync(
     """Fetch Open-Meteo observations and upsert them into the weather database."""
     if from_date > to_date:
         raise ValueError("from_date must not be after to_date")
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    cache_session = requests_cache.CachedSession(str(cache_path), expire_after=-1)
-    cache_session.hooks["response"].append(_log_cache_hit)
-    openmeteo = openmeteo_requests.Client(
-        session=retry(cache_session, retries=5, backoff_factor=0.2)
-    )
-
-    rows: dict[tuple[pd.Timestamp, str], dict[str, object]] = {}
-    for city in CITIES:
-        responses = openmeteo.weather_api(
-            "https://previous-runs-api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": city["lat"],
-                "longitude": city["lon"],
-                "hourly": WEATHER_API_PARAMS,
-                "start_date": from_date.strftime("%Y-%m-%d"),
-                "end_date": to_date.strftime("%Y-%m-%d"),
-            },
-        )
-        hourly = responses[0].Hourly()
-        datetimes = pd.date_range(
-            start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
-            end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
-            freq=pd.Timedelta(seconds=hourly.Interval()),
-            inclusive="left",
-        ).tz_localize(None)
-        for index, api_param in enumerate(WEATHER_API_PARAMS):
-            for timestamp, value in zip(
-                datetimes, hourly.Variables(index).ValuesAsNumpy()
-            ):
-                key = (timestamp, str(city["name"]))
-                row = rows.setdefault(
-                    key, {"datetime": timestamp, "city": city["name"]}
-                )
-                row[api_param] = value
+    rows = _fetch_rows(from_date, to_date, cache_path)
 
     _upsert(rows, db_path=db_path)
     logger.info(f"Stored {len(rows):,.0f} weather observations")
