@@ -3,6 +3,7 @@
 from darts.dataprocessing.transformers import Scaler
 from darts.models import NBEATSModel
 from sklearn.preprocessing import RobustScaler
+from torch import nn
 
 from engine.model_configs.registry import register_hourly
 
@@ -20,6 +21,7 @@ def nbeats_V1():
             "layer_widths": 256,
             "batch_size": 64,
             "n_epochs": 2,
+            "loss_fn": nn.MSELoss(),
             "pl_trainer_kwargs": {
                 "enable_progress_bar": False,
                 "enable_model_summary": False,
