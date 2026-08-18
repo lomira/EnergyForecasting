@@ -2,14 +2,20 @@ from types import SimpleNamespace
 from unittest import TestCase
 
 from engine.darts_pipeline.runner import _hf_kwargs
-from engine.model_configs import REGISTERED_MODELS
+from engine.model_configs import model_hourly
 
 
 class TrainingLengthTests(TestCase):
     def test_models_define_their_training_length(self) -> None:
         self.assertEqual(
-            {config["train_length"] for config in REGISTERED_MODELS.values()},
+            {config["train_length"] for config in model_hourly.values()},
             {24 * 21},
+        )
+
+    def test_models_register_by_function_name(self) -> None:
+        self.assertEqual(
+            set(model_hourly),
+            {"lightgbm_V1", "lightgbm_nex", "tft_V1", "nbeats_V1"},
         )
 
     def test_backtest_uses_the_model_training_length(self) -> None:

@@ -3,7 +3,7 @@ import pandas as pd
 from engine.darts_pipeline import BacktestSpec, build_model, run_backtest, run_forecast
 from engine.ingestion.temp_utils import populate_dbs
 from engine.logging_config import logger, setup_logging
-from engine.model_configs import REGISTERED_MODELS
+from engine.model_configs import model_hourly
 from engine.scenario.future_scenario import random_future_scenario
 from engine.series_utils import (
     covariates_time_series,
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     populate_dbs()
 
     #  -- SELECT THE MODEL ---------
-    model_config = REGISTERED_MODELS["tft_V1"]
+    model_config = model_hourly["tft_V1"]
     forecast_horizon = 24
 
     #  -- PRE PROCESSING ---------
