@@ -11,7 +11,7 @@ from engine.logging_config import logger, setup_logging
 from engine.model_configs import model_hourly
 from engine.scenario.future_scenario import random_future_scenario
 from engine.series_utils import (
-    covariates_time_series,
+    get_covariate_ts,
     get_load_ts,
 )
 
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         f"span={start_date} -> {end_date}"
     )
 
-    future_cov = covariates_time_series(start_date, end_date)
+    future_cov = get_covariate_ts(start_date, end_date)
     logger.info(
         f"Future covariates: {len(future_cov)} steps, "
         f"{future_cov.n_components} component(s)"

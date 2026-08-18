@@ -26,7 +26,7 @@ def get_load_ts(
     )
 
 
-def covariates_time_series(
+def get_covariate_ts(
     from_date: pd.Timestamp,
     to_date: pd.Timestamp,
 ) -> TimeSeries:
