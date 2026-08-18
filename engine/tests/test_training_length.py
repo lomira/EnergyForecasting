@@ -1,7 +1,10 @@
-from types import SimpleNamespace
 from unittest import TestCase
+from unittest.mock import patch
 
-from engine.darts_pipeline.runner import _hf_kwargs
+import pandas as pd
+from darts import TimeSeries
+from engine.darts_pipeline.runner import run_backtest
+from engine.darts_pipeline.spec import BacktestSpec
 from engine.model_configs import model_hourly
 
 
@@ -19,13 +22,29 @@ class TrainingLengthTests(TestCase):
         )
 
     def test_backtest_uses_the_model_training_length(self) -> None:
-        spec = SimpleNamespace(
+        series = TimeSeries.from_times_and_values(
+            pd.date_range("2024-01-01", periods=3, freq="h"), [1, 2, 3]
+        )
+        forecast = series[-1:]
+        spec = BacktestSpec(
             forecast_horizon=24,
             stride=168,
-            start=None,
             retrain=True,
-            overlap_end=False,
-            last_points_only=True,
+            start=pd.Timestamp("2024-01-01"),
         )
 
-        self.assertEqual(_hf_kwargs({"train_length": 123}, spec)["train_length"], 123)
+        with (
+            patch("engine.darts_pipeline.runner.build_model") as build_model,
+            patch(
+                "engine.darts_pipeline.runner.build_data_transformers", return_value={}
+            ),
+        ):
+            model = build_model.return_value
+            model.supports_future_covariates = False
+            model.historical_forecasts.return_value = forecast
+            result = run_backtest({"train_length": 123}, spec, series)
+
+        self.assertIs(result, forecast)
+        self.assertEqual(
+            model.historical_forecasts.call_args.kwargs["train_length"], 123
+        )

@@ -1,11 +1,5 @@
-"""Canonical backtest protocol.
+"""Canonical backtest protocol shared by all model configs."""
 
-One instance per comparison study, shared by ALL model configs.
-Every metric row is stamped with ``spec_hash`` to guarantee fold-comparability across different models.
-"""
-
-import hashlib
-import json
 from dataclasses import dataclass
 
 import pandas as pd
@@ -13,7 +7,7 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class BacktestSpec:
-    """Canonical, hashed backtest protocol.
+    """Canonical backtest protocol.
 
     Parameters
     ----------
@@ -37,16 +31,3 @@ class BacktestSpec:
     start: pd.Timestamp
     overlap_end: bool = False
     last_points_only: bool = True
-
-    def spec_hash(self) -> str:
-        payload = {
-            "h": self.forecast_horizon,
-            "stride": self.stride,
-            "retrain": self.retrain,
-            "start": str(self.start),
-            "overlap_end": self.overlap_end,
-            "lpo": self.last_points_only,
-        }
-        return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[
-            :16
-        ]

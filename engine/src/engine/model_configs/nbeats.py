@@ -10,7 +10,6 @@ from engine.model_configs.registry import register_hourly
 @register_hourly
 def nbeats_V1():
     return {
-        "name": "nbeats",
         "model_cls": NBEATSModel,
         "train_length": 24 * 21,
         "hyperparams": {
@@ -24,5 +23,4 @@ def nbeats_V1():
         },
         "feature_subset": (),
         "target_transform_chain": (Scaler(RobustScaler()),),
-        "future_cov_transform_chain": (),
     }

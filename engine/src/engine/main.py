@@ -1,6 +1,8 @@
 import pandas as pd
 
-from engine.darts_pipeline import BacktestSpec, build_model, run_backtest, run_forecast
+from engine.darts_pipeline.builder import build_model
+from engine.darts_pipeline.runner import run_backtest, run_forecast
+from engine.darts_pipeline.spec import BacktestSpec
 from engine.ingestion.internal_db import populate_internal_db
 from engine.ingestion.temp_utils import populate_externals_dbs
 from engine.logging_config import logger, setup_logging
@@ -50,7 +52,7 @@ if __name__ == "__main__":
     )
 
     logger.info("Running backtest (this may take a moment)…")
-    result = run_backtest(model_config, spec, series, future_cov=future_cov)
+    run_backtest(model_config, spec, series, future_cov=future_cov)
 
     #  -- FORECAST ---------
 

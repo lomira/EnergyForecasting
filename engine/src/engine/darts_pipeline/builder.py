@@ -4,25 +4,20 @@ Pipelines are built FRESH (unfitted) from factories every time
 No fitted state ever lives in a config dict.
 """
 
-from typing import Any
-
 from darts.dataprocessing.pipeline import Pipeline
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 
-def build_model(config: dict, **extra: Any) -> GlobalForecastingModel:
+def build_model(config: dict) -> GlobalForecastingModel:
     """Unfitted Darts model from a config dict.
 
     Parameters
     ----------
     config : dict
         Must contain ``model_cls`` and ``hyperparams`` keys.
-    extra : Any
-        Additional kwargs merged into hyperparams (for Optuna trials).
     """
     model_cls: type[GlobalForecastingModel] = config["model_cls"]
-    hyperparams = {**dict(config.get("hyperparams", {})), **extra}
-    return model_cls(**hyperparams)
+    return model_cls(**config.get("hyperparams", {}))
 
 
 def build_data_transformers(config: dict) -> dict[str, Pipeline]:

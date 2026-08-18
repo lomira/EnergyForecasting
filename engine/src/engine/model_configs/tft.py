@@ -10,7 +10,6 @@ from engine.model_configs.registry import register_hourly
 @register_hourly
 def tft_V1():
     return {
-        "name": "tft",
         "model_cls": TFTModel,
         "train_length": 24 * 21,
         "hyperparams": {

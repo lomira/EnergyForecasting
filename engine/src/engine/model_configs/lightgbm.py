@@ -9,7 +9,6 @@ from engine.model_configs.registry import register_hourly
 @register_hourly
 def lightgbm_V1():
     return {
-        "name": "lightgbm_baseline",
         "model_cls": LightGBMModel,
         "train_length": 24 * 21,
         "hyperparams": {
@@ -25,15 +24,12 @@ def lightgbm_V1():
             },
         },
         "feature_subset": ("Alger_temperature_2m",),
-        "target_transform_chain": (),
-        "future_cov_transform_chain": (),
     }
 
 
 @register_hourly
 def lightgbm_nex():
     return {
-        "name": "lightgbm_baseline",
         "model_cls": LightGBMModel,
         "train_length": 24 * 21,
         "hyperparams": {
@@ -49,6 +45,4 @@ def lightgbm_nex():
             },
         },
         "feature_subset": (),
-        "target_transform_chain": (),
-        "future_cov_transform_chain": (),
     }
