@@ -1,7 +1,11 @@
+from typing import cast
 from unittest import TestCase
 from unittest.mock import patch
 
 import pandas as pd
+from darts import TimeSeries
+
+from engine.darts_pipeline.builder import build_data_transformers
 from engine.series_utils import (
     covariates_time_series,
     forecast_covariates_time_series,
@@ -17,20 +21,27 @@ class SeriesUtilsTests(TestCase):
     ) -> None:
         index = pd.date_range("2024-01-01", periods=3, freq="h", name="datetime")
         read_weather.return_value = pd.DataFrame(
-            {"Alger_temperature_2m": [10.0, 11.0, 12.0]}, index=index
+            {
+                "Alger_temperature_2m": [10.0, 11.0, 12.0],
+                "unused": [1.0, 2.0, 3.0],
+            },
+            index=index,
         )
         read_holidays.return_value = pd.DataFrame(
             {"holidays": [True, False, False]}, index=index
         )
 
-        series = covariates_time_series(
-            index[0],
-            index[-1],
-            feature_subset=("Alger_temperature_2m", "holidays"),
-        )
-        data = series.to_dataframe()
+        series = covariates_time_series(index[0], index[-1])
+        pipeline = build_data_transformers(
+            {"feature_subset": ("holidays", "Alger_temperature_2m")}
+        )["future_covariates"]
+        data = cast(TimeSeries, pipeline.transform(series)).to_dataframe()
 
-        self.assertEqual(list(data.columns), ["Alger_temperature_2m", "holidays"])
+        self.assertEqual(
+            list(series.components),
+            ["Alger_temperature_2m", "unused", "holidays"],
+        )
+        self.assertEqual(list(data.columns), ["holidays", "Alger_temperature_2m"])
         self.assertEqual(data.iloc[0]["Alger_temperature_2m"], 10.0)
         self.assertEqual(data.iloc[1]["holidays"], 0.0)
 

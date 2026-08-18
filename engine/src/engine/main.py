@@ -33,11 +33,7 @@ if __name__ == "__main__":
         f"span={start_date} -> {end_date}"
     )
 
-    future_cov = covariates_time_series(
-        start_date,
-        end_date,
-        feature_subset=model_config["feature_subset"],
-    )
+    future_cov = covariates_time_series(start_date, end_date)
     logger.info(
         f"Future covariates: {len(future_cov)} steps, "
         f"{future_cov.n_components} component(s)"

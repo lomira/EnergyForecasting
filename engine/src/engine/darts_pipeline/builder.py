@@ -9,6 +9,8 @@ from typing import Any
 from darts.dataprocessing.pipeline import Pipeline
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
+from engine.featurize.selectors import ColumnSubsetTransformer
+
 
 def build_model(config: dict, **extra: Any) -> GlobalForecastingModel:
     """Unfitted Darts model from a config dict.
@@ -43,8 +45,10 @@ def build_data_transformers(config: dict) -> dict[str, Pipeline]:
     if past_chain:
         dt["past_covariates"] = Pipeline(list(past_chain), copy=True)
 
-    fut_chain = config.get("future_cov_transform_chain", ())
+    fut_chain = list(config.get("future_cov_transform_chain", ()))
+    if feature_subset := config.get("feature_subset"):
+        fut_chain.insert(0, ColumnSubsetTransformer(feature_subset))
     if fut_chain:
-        dt["future_covariates"] = Pipeline(list(fut_chain), copy=True)
+        dt["future_covariates"] = Pipeline(fut_chain, copy=True)
 
     return dt

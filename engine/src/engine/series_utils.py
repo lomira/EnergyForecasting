@@ -2,7 +2,6 @@
 
 import pandas as pd
 from darts import TimeSeries
-
 from holiday_data import read as read_holidays
 from load_data import read as read_load
 from weather_data import WEATHER_PREVIOUS_DAYS
@@ -43,7 +42,6 @@ def get_load_ts(
 def covariates_time_series(
     from_date: pd.Timestamp,
     to_date: pd.Timestamp,
-    feature_subset: tuple[str, ...] | None = None,
 ) -> TimeSeries:
     """Build a multivariate Darts TimeSeries from the covariate store.
 
@@ -51,23 +49,8 @@ def covariates_time_series(
     ----------
     from_date, to_date : pd.Timestamp
         Date range for covariates.
-    feature_subset : tuple of str, optional
-        If provided, only these columns are included. This enables the model
-        config's ``feature_subset`` to be applied at the covariate construction
-        stage rather than inside the pipeline.
     """
-
-    df = _covariates_dataframe(from_date, to_date)
-
-    if feature_subset:
-        missing = set(feature_subset) - set(df.columns)
-        if missing:
-            raise ValueError(
-                f"Feature subset columns not found in covariates: {sorted(missing)}"
-            )
-        df = df[list(feature_subset)]
-
-    return TimeSeries.from_dataframe(df)
+    return TimeSeries.from_dataframe(_covariates_dataframe(from_date, to_date))
 
 
 def forecast_covariates_time_series(
