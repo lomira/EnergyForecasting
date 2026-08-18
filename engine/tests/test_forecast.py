@@ -16,7 +16,7 @@ class ForecastTests(TestCase):
         series = TimeSeries.from_times_and_values(index, range(6))
         covariate_index = pd.date_range(index[0], periods=8, freq="h")
         historical_covariates = TimeSeries.from_times_and_values(
-            covariate_index, range(8)
+            covariate_index[:-1], range(7)
         )
         future_scenario = TimeSeries.from_times_and_values(
             covariate_index[-2:], [60, 70]
@@ -59,7 +59,6 @@ class ForecastTests(TestCase):
         model.fit.assert_called_once()
         model.predict.assert_called_once_with(
             n=2,
-            past_covariates=None,
             future_covariates=covariates,
         )
         self.assertIs(result, forecast)
