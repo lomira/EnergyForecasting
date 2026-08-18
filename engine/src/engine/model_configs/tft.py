@@ -21,7 +21,10 @@ def tft_V1():
             "dropout": 0.1,
             "batch_size": 64,
             "n_epochs": 2,
-            "add_relative_index": True,
+            "pl_trainer_kwargs": {
+                "enable_progress_bar": False,
+                "enable_model_summary": False,
+            },
             "add_encoders": {
                 "cyclic": {"future": ["hour", "dayofweek"]},
                 "datetime_attribute": {"future": ["month"]},

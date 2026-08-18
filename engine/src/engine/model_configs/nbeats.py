@@ -20,6 +20,10 @@ def nbeats_V1():
             "layer_widths": 256,
             "batch_size": 64,
             "n_epochs": 2,
+            "pl_trainer_kwargs": {
+                "enable_progress_bar": False,
+                "enable_model_summary": False,
+            },
         },
         "feature_subset": (),
         "target_transform_chain": (Scaler(RobustScaler()),),
