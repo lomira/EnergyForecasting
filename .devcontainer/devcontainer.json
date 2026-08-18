@@ -20,9 +20,9 @@
         "charliermarsh.ruff"
       ],
       "settings": {
+        "python.languageServer": "None",
         "[python]": {
           "defaultInterpreterPath": "${getWorkspaceFolder}/.venv/bin/python",
-          "python.languageServer": "None",
           "editor.defaultFormatter": "charliermarsh.ruff",
           "editor.formatOnSave": true,
           "editor.codeActionsOnSave": {
