@@ -92,6 +92,8 @@ def _fetch_rows(
         )
     for city in CITIES:
         for url, api_params, source_from in sources:
+            if type(source_from) is not pd.Timestamp:
+                raise TypeError(f"Expected pd.Timestamp, got {type(source_from)}")
             for timestamp, values in _fetch_source(
                 openmeteo, url, city, api_params, source_from, to_date
             ).iterrows():

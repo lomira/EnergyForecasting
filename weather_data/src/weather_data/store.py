@@ -88,6 +88,7 @@ def read(
         columns="city",
         values=list(WEATHER_API_PARAMS),
         aggfunc="first",
+        dropna=False,
     ).sort_index()
     tidy.columns = [f"{city}_{metric}" for metric, city in tidy.columns]
     return tidy
