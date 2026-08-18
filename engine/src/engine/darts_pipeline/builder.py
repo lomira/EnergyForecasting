@@ -32,7 +32,6 @@ def build_data_transformers(config: dict) -> dict[str, Pipeline]:
 
     Returns a dict with optional keys:
         - ``"series"``: target pipeline
-        - ``"past_covariates"``: past-covariate pipeline
         - ``"future_covariates"``: future-covariate pipeline
     """
     dt: dict[str, Pipeline] = {}
@@ -40,10 +39,6 @@ def build_data_transformers(config: dict) -> dict[str, Pipeline]:
     target_chain = config.get("target_transform_chain", ())
     if target_chain:
         dt["series"] = Pipeline(list(target_chain), copy=True)
-
-    past_chain = config.get("past_cov_transform_chain", ())
-    if past_chain:
-        dt["past_covariates"] = Pipeline(list(past_chain), copy=True)
 
     fut_chain = list(config.get("future_cov_transform_chain", ()))
     if feature_subset := config.get("feature_subset"):

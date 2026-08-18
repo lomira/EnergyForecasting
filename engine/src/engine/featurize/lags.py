@@ -6,8 +6,8 @@ NaN-head policy: the first `lag + max(windows) - 1` rows are undefined.
 We backfill with the first valid value computed from data STRICTLY INSIDE the transformed slice, no leak.
 """
 
-from collections.abc import Mapping
-from typing import Any, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import pandas as pd
 from darts import TimeSeries

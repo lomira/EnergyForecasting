@@ -24,6 +24,5 @@ def nbeats_V1():
         },
         "feature_subset": (),
         "target_transform_chain": (Scaler(RobustScaler()),),
-        "past_cov_transform_chain": (),
         "future_cov_transform_chain": (),
     }

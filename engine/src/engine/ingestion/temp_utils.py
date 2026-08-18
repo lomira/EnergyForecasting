@@ -4,10 +4,10 @@ import holiday_data
 import load_data
 import weather_data
 
-WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
 
 
-def populate_dbs() -> None:
+def populate_externals_dbs() -> None:
     if not load_data.DB_PATH.exists():
         load_data.import_excel(
             file_path=WORKSPACE_ROOT / "data" / "raw" / "excel" / "BDD_E.xlsx",

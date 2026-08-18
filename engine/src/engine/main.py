@@ -1,7 +1,8 @@
 import pandas as pd
 
 from engine.darts_pipeline import BacktestSpec, build_model, run_backtest, run_forecast
-from engine.ingestion.temp_utils import populate_dbs
+from engine.ingestion.internal_db import populate_internal_db
+from engine.ingestion.temp_utils import populate_externals_dbs
 from engine.logging_config import logger, setup_logging
 from engine.model_configs import model_hourly
 from engine.scenario.future_scenario import random_future_scenario
@@ -14,7 +15,8 @@ setup_logging(level="INFO")
 
 
 if __name__ == "__main__":
-    populate_dbs()
+    populate_internal_db()
+    populate_externals_dbs()
 
     #  -- SELECT THE MODEL ---------
     model_config = model_hourly["tft_V1"]

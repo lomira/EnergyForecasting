@@ -5,6 +5,7 @@ from darts.models import LightGBMModel
 from engine.featurize.calendar import encode_onehot_custom_weekday
 from engine.model_configs.registry import register_hourly
 
+
 @register_hourly
 def lightgbm_V1():
     return {
@@ -25,7 +26,6 @@ def lightgbm_V1():
         },
         "feature_subset": ("Alger_temperature_2m",),
         "target_transform_chain": (),
-        "past_cov_transform_chain": (),
         "future_cov_transform_chain": (),
     }
 
@@ -50,6 +50,5 @@ def lightgbm_nex():
         },
         "feature_subset": (),
         "target_transform_chain": (),
-        "past_cov_transform_chain": (),
         "future_cov_transform_chain": (),
     }

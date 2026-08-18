@@ -4,7 +4,6 @@ from darts.dataprocessing.transformers import Scaler
 from darts.models import TFTModel
 from sklearn.preprocessing import RobustScaler
 
-from engine.featurize.lags import RollingLagTransformer
 from engine.model_configs.registry import register_hourly
 
 
@@ -30,11 +29,13 @@ def tft_V1():
                 "tz": "UTC",
             },
         },
-        "feature_subset": ("Alger_temperature_2m",),
-        "target_transform_chain": (Scaler(RobustScaler()),),
-        "past_cov_transform_chain": (
-            RollingLagTransformer(windows=(24, 168), stats=("mean", "std"), lag=24),
-            Scaler(RobustScaler()),
+        "feature_subset": (
+            "Alger_temperature_2m",
+            "Alger_temperature_2m__roll_mean24_lag24",
+            "Alger_temperature_2m__roll_std24_lag24",
+            "Alger_temperature_2m__roll_mean168_lag24",
+            "Alger_temperature_2m__roll_std168_lag24",
         ),
+        "target_transform_chain": (Scaler(RobustScaler()),),
         "future_cov_transform_chain": (Scaler(RobustScaler()),),
     }

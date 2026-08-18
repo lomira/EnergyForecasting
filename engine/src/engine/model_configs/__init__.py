@@ -6,7 +6,6 @@ Each module declares one or more configs with the shape:
     hyperparams     — kwargs passed to the model constructor
     feature_subset  — columns to select from covariates
     target_transform_chain    — factory tuples for the target pipeline
-    past_cov_transform_chain  — factory tuples for past covariates
     future_cov_transform_chain — factory tuples for future covariates
 
 """

@@ -82,7 +82,6 @@ def run_backtest(
     config: dict,
     spec: BacktestSpec,
     series: TimeSeries,
-    past_cov: TimeSeries | None = None,
     future_cov: TimeSeries | None = None,
 ) -> BacktestResult:
     """Run a Darts-native backtest for a model config.
@@ -95,8 +94,8 @@ def run_backtest(
         Evaluation protocol.
     series : TimeSeries
         Target series.
-    past_cov, future_cov : TimeSeries, optional
-        Covariate series.
+    future_cov : TimeSeries, optional
+        Future-covariate series.
 
     Returns
     -------
@@ -104,8 +103,6 @@ def run_backtest(
     """
     # ---- validation layer ----
     assert series.freq is not None, "series freq is None"
-    if past_cov is not None:
-        assert past_cov.freq == series.freq, "past_cov freq mismatch"
     if future_cov is not None:
         assert future_cov.freq == series.freq, "future_cov freq mismatch"
 
@@ -131,7 +128,6 @@ def run_backtest(
     model = build_model(config)
     fc = model.historical_forecasts(
         series=series,
-        past_covariates=past_cov,
         future_covariates=future_cov,
         data_transformers=dt or None,
         **_hf_kwargs(config, spec),
@@ -177,7 +173,6 @@ def run_forecast(
     series: TimeSeries,
     horizon: int,
     *,
-    past_cov: TimeSeries | None = None,
     future_cov: TimeSeries | None = None,
     future_scenario: TimeSeries | None = None,
 ) -> TimeSeries:
@@ -190,8 +185,6 @@ def run_forecast(
         raise ValueError(
             f"series has {len(series)} steps; model requires {train_length}"
         )
-    if past_cov is not None and past_cov.freq != series.freq:
-        raise ValueError("past_cov freq mismatch")
     if future_cov is not None and future_cov.freq != series.freq:
         raise ValueError("future_cov freq mismatch")
     if future_scenario is not None:
@@ -210,29 +203,38 @@ def run_forecast(
         else training_series
     )
 
-    transformed_covariates: dict[str, TimeSeries | None] = {}
-    for name, covariates in (
-        ("past_covariates", past_cov),
-        ("future_covariates", future_cov),
-    ):
-        transformer = transformers.get(name)
-        if covariates is not None and transformer is not None:
-            transformer.fit(covariates.slice_intersect(training_series))
-            covariates = cast(TimeSeries, transformer.transform(covariates))
-        transformed_covariates[name] = covariates
+    future_transformer = transformers.get("future_covariates")
+    if future_cov is not None and future_transformer is not None:
+        future_transformer.fit(future_cov.slice_intersect(training_series))
+        future_cov = cast(TimeSeries, future_transformer.transform(future_cov))
+        if future_scenario is not None:
+            future_scenario = cast(
+                TimeSeries, future_transformer.transform(future_scenario)
+            )
+
+    if future_scenario is not None:
+        assert future_cov is not None
+        if not future_cov.components.equals(future_scenario.components):
+            raise ValueError("future_scenario components must match future_cov")
+        history = future_cov.to_dataframe()
+        scenario = future_scenario.to_dataframe()
+        future_cov = TimeSeries.from_dataframe(
+            pd.concat(
+                [history.loc[history.index < scenario.index[0]], scenario],
+                axis=0,
+            )
+        )
 
     model = build_model(config)
     model.fit(
         transformed_series,
-        past_covariates=transformed_covariates["past_covariates"],
-        future_covariates=transformed_covariates["future_covariates"],
+        future_covariates=future_cov,
     )
     forecast = cast(
         TimeSeries,
         model.predict(
             n=horizon,
-            past_covariates=transformed_covariates["past_covariates"],
-            future_covariates=transformed_covariates["future_covariates"],
+            future_covariates=future_cov,
         ),
     )
     if target_transformer is not None:

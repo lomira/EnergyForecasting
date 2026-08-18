@@ -1,7 +1,7 @@
 """Feature subsetting INSIDE the pipeline."""
 
-from collections.abc import Mapping
-from typing import Any, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
