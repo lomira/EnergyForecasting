@@ -5,6 +5,7 @@ are stamped with ``(spec_hash, config_hash, data_fp)`` for future persistence.
 """
 
 import hashlib
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, cast
 
@@ -78,31 +79,15 @@ def _hf_kwargs(config: dict, spec: BacktestSpec) -> dict:
     }
 
 
-def _future_covariates_for(
-    config: dict,
-    model: Any,
-    future_cov: TimeSeries | None,
-    future_scenario: TimeSeries | None = None,
-) -> tuple[TimeSeries | None, TimeSeries | None]:
-    features = list(config.get("feature_subset", ()))
-    if not features:
-        return None, None
-    if not model.supports_future_covariates:
-        raise ValueError(
-            f"{type(model).__name__} does not support future covariates, "
-            "but feature_subset is not empty"
-        )
-    for covariates in (future_cov, future_scenario):
-        if covariates is not None:
-            missing = set(features) - set(covariates.components)
-            if missing:
-                raise ValueError(
-                    f"Future covariates missing configured components: {sorted(missing)}"
-                )
-    return (
-        future_cov[features] if future_cov is not None else None,
-        future_scenario[features] if future_scenario is not None else None,
-    )
+def _select_covariates(
+    covariates: TimeSeries | None, features: Sequence[str]
+) -> TimeSeries | None:
+    if covariates is None or not features:
+        return None
+    missing = set(features) - set(covariates.components)
+    if missing:
+        raise ValueError(f"Covariates missing configured components: {sorted(missing)}")
+    return covariates[list(features)]
 
 
 def run_backtest(
@@ -131,7 +116,13 @@ def run_backtest(
     # ---- validation layer ----
     assert series.freq is not None, "series freq is None"
     model = build_model(config)
-    future_cov, _ = _future_covariates_for(config, model, future_cov)
+    features = config.get("feature_subset", ())
+    if features and not model.supports_future_covariates:
+        raise ValueError(
+            f"{type(model).__name__} does not support future covariates, "
+            "but feature_subset is not empty"
+        )
+    future_cov = _select_covariates(future_cov, features)
     if future_cov is not None:
         assert future_cov.freq == series.freq, "future_cov freq mismatch"
 
@@ -209,9 +200,14 @@ def run_forecast(
         raise ValueError("horizon must be positive")
 
     model = build_model(config)
-    future_cov, future_scenario = _future_covariates_for(
-        config, model, future_cov, future_scenario
-    )
+    features = config.get("feature_subset", ())
+    if features and not model.supports_future_covariates:
+        raise ValueError(
+            f"{type(model).__name__} does not support future covariates, "
+            "but feature_subset is not empty"
+        )
+    future_cov = _select_covariates(future_cov, features)
+    future_scenario = _select_covariates(future_scenario, features)
 
     train_length = config["train_length"]
     if len(series) < train_length:

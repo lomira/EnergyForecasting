@@ -1,10 +1,7 @@
-from typing import cast
 from unittest import TestCase
 from unittest.mock import patch
 
 import pandas as pd
-from darts import TimeSeries
-from engine.darts_pipeline.builder import build_data_transformers
 from engine.series_utils import (
     covariates_time_series,
     get_load_ts,
@@ -25,16 +22,16 @@ class SeriesUtilsTests(TestCase):
         )
 
         series = covariates_time_series(index[0], index[-1])
-        pipeline = build_data_transformers(
-            {"feature_subset": ("holidays", "Alger_temperature_2m")}
-        )["future_covariates"]
-        data = cast(TimeSeries, pipeline.transform(series)).to_dataframe()
+        data = series.to_dataframe()
 
         self.assertEqual(
             list(series.components),
             ["Alger_temperature_2m", "unused", "holidays"],
         )
-        self.assertEqual(list(data.columns), ["holidays", "Alger_temperature_2m"])
+        self.assertEqual(
+            list(data.columns),
+            ["Alger_temperature_2m", "unused", "holidays"],
+        )
         self.assertEqual(data.iloc[0]["Alger_temperature_2m"], 10.0)
         self.assertEqual(data.iloc[1]["holidays"], 0.0)
 
