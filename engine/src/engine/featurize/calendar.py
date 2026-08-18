@@ -25,3 +25,11 @@ def encode_onehot_custom_weekday(index: pd.DatetimeIndex) -> np.ndarray:
     one_hot = np.zeros((len(index), 4), dtype=np.float64)
     one_hot[np.arange(len(index)), cat_indices] = 1.0
     return one_hot
+
+
+def weekday_features(index: pd.DatetimeIndex) -> pd.DataFrame:
+    return pd.DataFrame(
+        encode_onehot_custom_weekday(index),
+        index=index,
+        columns=[f"custom_weekday_{day}" for day in range(1, 5)],
+    )
