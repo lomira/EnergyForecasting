@@ -1,4 +1,6 @@
+import logging
 import sys
+import warnings
 from pathlib import Path
 
 from loguru import logger
@@ -12,6 +14,20 @@ def setup_logging(
     log_file: bool = True,
 ) -> None:
     """Configure loguru handlers."""
+    logging.getLogger("lightning_fabric").setLevel(logging.ERROR)
+    logging.getLogger("lightning_utilities").setLevel(logging.ERROR)
+    logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
+    warnings.filterwarnings(
+        "ignore",
+        message=r"`isinstance\(treespec, LeafSpec\)` is deprecated",
+        module=r"pytorch_lightning\.utilities\._pytree",
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"Total length of `list` across ranks is zero\.",
+        module=r"pytorch_lightning\.utilities\.data",
+    )
+
     logger.remove()
     logger.add(
         sys.stderr,
