@@ -1,1 +1,1 @@
-"""Feature engineering transformers for the Darts pipeline."""
+"""Feature engineering helpers."""

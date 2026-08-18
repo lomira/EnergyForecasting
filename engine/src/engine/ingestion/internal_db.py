@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import cast
 
 import pandas as pd
-from darts import TimeSeries
 from loguru import logger
 
 import holiday_data
@@ -13,17 +12,22 @@ import load_data
 import weather_data
 from engine.featurize.calendar import encode_onehot_custom_weekday
 from engine.featurize.features import Feature
-from engine.featurize.lags import RollingLagTransformer
 
 DB_PATH = load_data.DB_PATH.with_name("internal.sqlite3")
 
 
 def _future_covariates(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.DataFrame:
     weather = weather_data.read(from_date, to_date)
-    weather = cast(
-        TimeSeries,
-        RollingLagTransformer().transform(TimeSeries.from_dataframe(weather)),
-    ).to_dataframe()
+    features: dict[str, pd.Series] = {}
+    for column in weather.columns:
+        shifted = weather[column].shift(24)
+        for window in (24, 168):
+            rolling = shifted.rolling(window, min_periods=window)
+            features[f"{column}__roll_mean{window}_lag24"] = rolling.mean()
+            features[f"{column}__roll_std{window}_lag24"] = rolling.std()
+    weather = pd.concat(
+        [weather, pd.DataFrame(features, index=weather.index)], axis=1
+    ).bfill().ffill()
     holidays = holiday_data.read(from_date, to_date)
     # Convert the daily holiday flags to hourly with forward fill
     holidays = pd.DataFrame(
