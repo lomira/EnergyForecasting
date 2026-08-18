@@ -12,6 +12,7 @@ import holiday_data
 import load_data
 import weather_data
 from engine.featurize.calendar import encode_onehot_custom_weekday
+from engine.featurize.features import Feature
 from engine.featurize.lags import RollingLagTransformer
 
 DB_PATH = load_data.DB_PATH.with_name("internal.sqlite3")
@@ -24,6 +25,23 @@ def _future_covariates(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.Dat
         RollingLagTransformer().transform(TimeSeries.from_dataframe(weather)),
     ).to_dataframe()
     holidays = holiday_data.read(from_date, to_date)
+    # Convert the daily holiday flags to hourly with forward fill
+    holidays = pd.DataFrame(
+        holidays.reindex(
+            pd.date_range(
+                start=from_date.floor(
+                    "d"
+                ),  # Ensuring that we get a match with the hourly data, we floor the from_date to the start of the day
+                end=to_date,
+                freq="h",
+            ),
+            method="ffill",
+        ).fillna(0),
+        columns=[Feature.HOLIDAYS.value],
+    )
+    # we remove the eventuals elements introduce by the floor date
+    holidays = holidays[holidays.index >= from_date]
+
     index = weather.index.union(holidays.index).sort_values()
     weekdays = pd.DataFrame(
         encode_onehot_custom_weekday(index),
