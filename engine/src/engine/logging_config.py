@@ -8,6 +8,7 @@ from loguru import logger
 # Rotating log file lives under <workspace>/data/engine.log
 LOG_FILE = Path(__file__).resolve().parents[3] / "data" / "engine.log"
 
+
 def setup_logging(
     *,
     level: str = "DEBUG",

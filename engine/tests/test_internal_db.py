@@ -21,9 +21,7 @@ class InternalDatabaseTests(TestCase):
     ) -> None:
         load_index = pd.date_range("2024-01-01", periods=300, freq="h")
         weather_index = load_index[100:]
-        read_load.return_value = pd.DataFrame(
-            {"load_mw": range(300)}, index=load_index
-        )
+        read_load.return_value = pd.DataFrame({"load_mw": range(300)}, index=load_index)
         read_weather.return_value = pd.DataFrame(
             {"Alger_temperature_2m": range(200)}, index=weather_index
         )
@@ -42,17 +40,11 @@ class InternalDatabaseTests(TestCase):
             self.assertEqual(len(corrected), 300)
             self.assertEqual(len(covariates), 200)
             self.assertEqual(
-                len(
-                    read_corrected_load(
-                        load_index[1], load_index[2], db_path=db_path
-                    )
-                ),
+                len(read_corrected_load(load_index[1], load_index[2], db_path=db_path)),
                 2,
             )
             self.assertFalse(covariates.isna().any().any())
-            self.assertIn(
-                "Alger_temperature_2m__roll_mean168_lag24", covariates
-            )
+            self.assertIn("Alger_temperature_2m__roll_mean168_lag24", covariates)
             self.assertTrue(
                 all(f"custom_weekday_{day}" in covariates for day in range(1, 5))
             )

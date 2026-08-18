@@ -49,4 +49,6 @@ class TrainingLengthTests(TestCase):
         self.assertEqual(
             model.historical_forecasts.call_args.kwargs["train_length"], 123
         )
-        self.assertIn("WAPE: 0.0000 (0.00%), MAPE: 0.0000 (0.00%)", log_info.call_args.args[0])
+        self.assertIn(
+            "WAPE: 0.0000 (0.00%), MAPE: 0.0000 (0.00%)", log_info.call_args.args[0]
+        )

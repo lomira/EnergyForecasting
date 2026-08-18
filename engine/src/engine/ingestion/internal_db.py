@@ -50,8 +50,7 @@ def populate_internal_db(*, db_path: Path = DB_PATH) -> None:
             index_label="datetime",
         )
         connection.execute(
-            "CREATE UNIQUE INDEX corrected_load_datetime "
-            "ON corrected_load (datetime)"
+            "CREATE UNIQUE INDEX corrected_load_datetime ON corrected_load (datetime)"
         )
         future_covariates.to_sql(
             "future_covariates",
