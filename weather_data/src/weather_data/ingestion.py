@@ -73,19 +73,27 @@ def _fetch_rows(
         session=retry(cache_session, retries=5, backoff_factor=0.2)  # ty: ignore[invalid-argument-type]
     )
     rows: dict[tuple[pd.Timestamp, str], dict[str, object]] = {}
-    sources = (
-        ("https://archive-api.open-meteo.com/v1/archive", WEATHER_METRICS),
-        (
-            "https://previous-runs-api.open-meteo.com/v1/forecast",
-            tuple(
-                param for param in WEATHER_API_PARAMS if param not in WEATHER_METRICS
-            ),
-        ),
-    )
+    sources = [
+        ("https://archive-api.open-meteo.com/v1/archive", WEATHER_METRICS, from_date)
+    ]
+    # previous-runs API only has data from 2016-01-01 onwards, so we need to limit the from_date for that source
+    previous_runs_from = max(from_date, pd.Timestamp("2016-01-01"))
+    if previous_runs_from <= to_date:
+        sources.append(
+            (
+                "https://previous-runs-api.open-meteo.com/v1/forecast",
+                tuple(
+                    param
+                    for param in WEATHER_API_PARAMS
+                    if param not in WEATHER_METRICS
+                ),
+                previous_runs_from,
+            )
+        )
     for city in CITIES:
-        for url, api_params in sources:
+        for url, api_params, source_from in sources:
             for timestamp, values in _fetch_source(
-                openmeteo, url, city, api_params, from_date, to_date
+                openmeteo, url, city, api_params, source_from, to_date
             ).iterrows():
                 timestamp = cast(pd.Timestamp, timestamp)
                 key = (timestamp, str(city["name"]))

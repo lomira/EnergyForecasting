@@ -19,8 +19,8 @@ setup_logging(level="INFO")
 
 
 if __name__ == "__main__":
-    populate_internal_db()
     populate_externals_dbs()
+    populate_internal_db()
 
     #  -- SELECT THE MODEL ---------
     model_config = model_hourly["tft_V1"]

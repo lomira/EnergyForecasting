@@ -23,6 +23,34 @@ def _response(timestamp: pd.Timestamp, values: list[float]):
 
 
 class WeatherDataTests(TestCase):
+    def test_sync_starts_previous_runs_at_2016(self) -> None:
+        timestamp = pd.Timestamp("2008-01-01 00:00")
+        openmeteo = MagicMock()
+        openmeteo.weather_api.side_effect = (
+            _response(timestamp, [10.0, 60.0, 0.0, 5.0, 100.0]),
+            _response(pd.Timestamp("2016-01-01"), [1.0] * 10),
+        )
+        city = {"name": "Alger", "lat": 36.73, "lon": 3.08}
+
+        with (
+            TemporaryDirectory() as directory,
+            patch("weather_data.ingestion.CITIES", (city,)),
+            patch(
+                "weather_data.ingestion.openmeteo_requests.Client",
+                return_value=openmeteo,
+            ),
+            patch("weather_data.ingestion._upsert"),
+        ):
+            sync(
+                timestamp,
+                pd.Timestamp("2020-01-01"),
+                cache_path=Path(directory) / "weather-cache",
+            )
+
+        archive_call, previous_call = openmeteo.weather_api.call_args_list
+        self.assertEqual(archive_call.kwargs["params"]["start_date"], "2008-01-01")
+        self.assertEqual(previous_call.kwargs["params"]["start_date"], "2016-01-01")
+
     def test_sync_merges_archive_actuals_with_previous_runs(self) -> None:
         timestamp = pd.Timestamp("2024-01-01 00:00")
         openmeteo = MagicMock()
