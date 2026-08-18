@@ -20,6 +20,9 @@ members = [
 [tool.uv.sources]
 engine = { workspace = true }
 
+[tool.ty.src]
+exclude = ["**/tests/**"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.15.20",
