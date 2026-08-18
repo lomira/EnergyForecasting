@@ -20,7 +20,7 @@ def nbeats_V1():
             "num_layers": 4,
             "layer_widths": 256,
             "batch_size": 64,
-            "n_epochs": 50,
+            "n_epochs": 2,
         },
         "feature_subset": (),
         "target_transform_chain": (Scaler(RobustScaler()),),

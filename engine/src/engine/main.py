@@ -19,7 +19,7 @@ if __name__ == "__main__":
     populate_externals_dbs()
 
     #  -- SELECT THE MODEL ---------
-    model_config = model_hourly["tft_V1"]
+    model_config = model_hourly["nbeats_V1"]
     forecast_horizon = 24
 
     #  -- PRE PROCESSING ---------
