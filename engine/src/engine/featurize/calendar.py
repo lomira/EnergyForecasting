@@ -16,7 +16,7 @@ def encode_onehot_custom_weekday(index: pd.DatetimeIndex) -> np.ndarray:
     """
 
     # dayofweek: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6
-    dow = index.dayofweek.to_numpy()
+    dow = index.to_series().dt.dayofweek.to_numpy()
 
     # mapping: Mon/Fri → 0, Tue/Wed/Thu → 1, Sat → 2, Sun → 3
     _WEEKDAY_MAP = np.array([0, 1, 1, 1, 0, 2, 3])

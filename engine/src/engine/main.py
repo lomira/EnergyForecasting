@@ -25,6 +25,8 @@ if __name__ == "__main__":
     # Build Darts TimeSeries from the database
     series = get_load_ts()
     start_date, end_date = series.start_time(), series.end_time()
+    if type(start_date) is not pd.Timestamp or type(end_date) is not pd.Timestamp:
+        raise ValueError("series start and end must be pd.Timestamp")
 
     logger.info(
         f"Target series: {len(series)} steps, freq={series.freq}, "
@@ -53,12 +55,16 @@ if __name__ == "__main__":
     result = run_backtest(model_config, spec, series, future_cov=future_cov)
 
     #  -- FORECAST ---------
+
     forecast_start = end_date - pd.Timedelta(hours=forecast_horizon - 1)
+    if type(forecast_start) is not pd.Timestamp:
+        raise ValueError("forecast_start must be pd.Timestamp")
+
     max_future_covariate_lag = build_model(model_config).extreme_lags[5] or 0
-    forecast_end = (
-        forecast_start
-        + max(forecast_horizon - 1, max_future_covariate_lag) * series.freq
-    )
+    forecast_horizon_needed = max(forecast_horizon, max_future_covariate_lag + 1)
+    forecast_end = forecast_start + pd.Timedelta(hours=forecast_horizon_needed)
+    if type(forecast_end) is not pd.Timestamp:
+        raise ValueError("forecast_end must be pd.Timestamp")
 
     forecast_training_series = series.drop_after(forecast_start)
     future_scenario = random_future_scenario(

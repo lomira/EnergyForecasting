@@ -53,15 +53,15 @@ def read(
             ORDER BY date
             """,
             connection,
-            params=(
+            params=[
                 from_date.date().isoformat(),
                 to_date.date().isoformat(),
-            ),
+            ],
             parse_dates=["date"],
         )
     if data.empty:
         raise ValueError("No holiday observations found in the requested range")
     hours = pd.date_range(from_date, to_date, freq="h")
-    data = data.set_index("date").reindex(hours.normalize()).set_axis(hours)
+    data = data.set_index("date").reindex(hours).set_axis(hours)
     data.index.name = "datetime"
     return data.dropna().astype(bool)

@@ -1,6 +1,7 @@
 """Feature subsetting INSIDE the pipeline."""
 
-from typing import Sequence
+from collections.abc import Mapping
+from typing import Any, Sequence
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -22,7 +23,7 @@ class ColumnSubsetTransformer(BaseDataTransformer):
         )
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: dict) -> TimeSeries:
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
         cols = list(params["fixed"]["_columns"])
         missing = set(cols) - set(series.components)
         if missing:

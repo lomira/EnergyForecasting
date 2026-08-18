@@ -1,6 +1,7 @@
 """Read and validate source load files."""
 
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 from loguru import logger
@@ -49,7 +50,7 @@ def import_excel(
         pd.read_excel(file_path, sheet_name=sheet_name, engine="openpyxl")
     )
     records = [
-        (pd.Timestamp(row.datetime).isoformat(sep=" "), float(row.load_mw))
+        (cast(pd.Timestamp, row[0]).isoformat(sep=" "), cast(float, row[1]))
         for row in tidy.itertuples(index=False)
     ]
     _upsert(records, db_path=db_path)

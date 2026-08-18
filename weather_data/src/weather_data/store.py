@@ -4,6 +4,7 @@ import sqlite3
 from collections.abc import Generator
 from contextlib import closing, contextmanager
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -44,10 +45,10 @@ def _upsert(
     )
     records = [
         (
-            pd.Timestamp(row["datetime"]).isoformat(sep=" "),
+            cast(pd.Timestamp, row["datetime"]).isoformat(sep=" "),
             str(row["city"]),
             *(
-                None if pd.isna(row.get(name)) else float(row[name])
+                None if pd.isna(row.get(name)) else cast(float, row[name])
                 for name in WEATHER_API_PARAMS
             ),
         )
@@ -74,10 +75,10 @@ def read(
             ORDER BY datetime, city
             """,
             connection,
-            params=(
+            params=[
                 from_date.isoformat(sep=" "),
                 to_date.isoformat(sep=" "),
-            ),
+            ],
             parse_dates=["datetime"],
         )
     if data.empty:

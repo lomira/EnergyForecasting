@@ -4,6 +4,7 @@ import sqlite3
 from collections.abc import Generator
 from contextlib import closing, contextmanager
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -45,7 +46,9 @@ def get_date_range(*, db_path: Path = DB_PATH) -> tuple[pd.Timestamp, pd.Timesta
         ).fetchone()
     if row is None or row[0] is None or row[1] is None:
         raise ValueError("No load observations found in the database")
-    return pd.Timestamp(row[0]), pd.Timestamp(row[1])
+    return cast(pd.Timestamp, pd.Timestamp(row[0])), cast(
+        pd.Timestamp, pd.Timestamp(row[1])
+    )
 
 
 def read(

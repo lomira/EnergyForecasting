@@ -47,7 +47,7 @@ def data_fingerprint(series: TimeSeries, decimals: int = 2) -> str:
 
 @dataclass
 class BacktestResult:
-    forecasts: list[TimeSeries]
+    forecasts: TimeSeries
     fold_scores: list[float]
     aggregate: float  # mean of per-fold WAPE
     spec_hash: str
@@ -136,11 +136,14 @@ def run_backtest(
         data_transformers=dt or None,
         **_hf_kwargs(config, spec),
     )
-    forecasts = fc if isinstance(fc, list) else [fc]
+    if type(fc) is not TimeSeries:
+        raise ValueError(
+            "historical_forecasts returned non-TimeSeries (list of TimeSeries probably)"
+        )
 
-    scores = [wape(f, series.slice_intersect(f)) for f in forecasts]
+    scores = [wape(fc, series.slice_intersect(fc))]
     result = BacktestResult(
-        forecasts=forecasts,
+        forecasts=fc,
         fold_scores=scores,
         aggregate=float(np.nanmean(scores)),
         spec_hash=spec.spec_hash(),
@@ -196,9 +199,6 @@ def run_forecast(
             raise ValueError("future_scenario requires historical future_cov")
         if future_scenario.freq != series.freq:
             raise ValueError("future_scenario freq mismatch")
-        future_cov = future_cov.slice(
-            future_cov.start_time(), future_scenario.start_time() - series.freq
-        ).append(future_scenario)
 
     training_series = series[-train_length:]
     transformers = build_data_transformers(config)
@@ -222,10 +222,18 @@ def run_forecast(
         transformed_covariates[name] = covariates
 
     model = build_model(config)
-    model.fit(transformed_series, **transformed_covariates)
+    model.fit(
+        transformed_series,
+        past_covariates=transformed_covariates["past_covariates"],
+        future_covariates=transformed_covariates["future_covariates"],
+    )
     forecast = cast(
         TimeSeries,
-        model.predict(n=horizon, **transformed_covariates),
+        model.predict(
+            n=horizon,
+            past_covariates=transformed_covariates["past_covariates"],
+            future_covariates=transformed_covariates["future_covariates"],
+        ),
     )
     if target_transformer is not None:
         forecast = cast(

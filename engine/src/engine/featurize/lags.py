@@ -6,7 +6,8 @@ NaN-head policy: the first `lag + max(windows) - 1` rows are undefined.
 We backfill with the first valid value computed from data STRICTLY INSIDE the transformed slice, no leak.
 """
 
-from typing import Sequence
+from collections.abc import Mapping
+from typing import Any, Sequence
 
 import pandas as pd
 from darts import TimeSeries
@@ -36,7 +37,7 @@ class RollingLagTransformer(BaseDataTransformer):
         )
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: dict) -> TimeSeries:
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
         fixed = params["fixed"]
         windows, stats = fixed["_windows"], fixed["_stats"]
         lag, fill_nan = fixed["_lag"], fixed["_fill_nan"]
