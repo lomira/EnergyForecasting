@@ -8,6 +8,7 @@ from darts.models import TFTModel
 from sklearn.preprocessing import RobustScaler
 from torch import nn
 
+from engine.featurize.features import Feature
 from engine.model_configs.registry import register_hourly
 
 
@@ -81,11 +82,11 @@ def tft_V1():
         },
     )
     config["feature_subset"] = (
-        "Alger_temperature_2m",
-        "Alger_temperature_2m__roll_mean24_lag24",
-        "Alger_temperature_2m__roll_std24_lag24",
-        "Alger_temperature_2m__roll_mean168_lag24",
-        "Alger_temperature_2m__roll_std168_lag24",
+        Feature.ALGER_TEMPERATURE_2M,
+        Feature.ALGER_TEMPERATURE_2M_ROLL_MEAN24_LAG24,
+        Feature.ALGER_TEMPERATURE_2M_ROLL_STD24_LAG24,
+        Feature.ALGER_TEMPERATURE_2M_ROLL_MEAN168_LAG24,
+        Feature.ALGER_TEMPERATURE_2M_ROLL_STD168_LAG24,
     )
     config["target_transform_chain"] = (Scaler(RobustScaler()),)
     config["future_cov_transform_chain"] = (Scaler(RobustScaler()),)

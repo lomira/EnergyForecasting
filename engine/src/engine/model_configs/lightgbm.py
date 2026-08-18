@@ -3,6 +3,7 @@
 from darts.models import LightGBMModel
 
 from engine.featurize.calendar import encode_onehot_custom_weekday
+from engine.featurize.features import Feature
 from engine.model_configs.registry import register_hourly
 
 
@@ -23,7 +24,7 @@ def lightgbm_V1():
                 "tz": "UTC",
             },
         },
-        "feature_subset": ("Alger_temperature_2m",),
+        "feature_subset": (Feature.ALGER_TEMPERATURE_2M,),
     }
 
 
