@@ -38,6 +38,7 @@ class TrainingLengthTests(TestCase):
             patch(
                 "engine.darts_pipeline.runner.build_data_transformers", return_value={}
             ),
+            patch("engine.darts_pipeline.runner.logger.info") as log_info,
         ):
             model = build_model.return_value
             model.supports_future_covariates = False
@@ -48,3 +49,4 @@ class TrainingLengthTests(TestCase):
         self.assertEqual(
             model.historical_forecasts.call_args.kwargs["train_length"], 123
         )
+        self.assertIn("WAPE: 0.0000 (0.00%), MAPE: 0.0000 (0.00%)", log_info.call_args.args[0])

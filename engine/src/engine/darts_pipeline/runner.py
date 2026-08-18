@@ -5,7 +5,7 @@ from typing import cast
 
 import pandas as pd
 from darts import TimeSeries
-from darts.metrics import wmape
+from darts.metrics import mape, wmape
 
 from engine.darts_pipeline.builder import build_data_transformers, build_model
 from engine.darts_pipeline.spec import BacktestSpec
@@ -63,10 +63,12 @@ def run_backtest(
             "historical_forecasts returned non-TimeSeries (list of TimeSeries probably)"
         )
 
-    score = cast(float, wmape(series, fc)) / 100
+    wape_score = cast(float, wmape(series, fc)) / 100
+    mape_score = cast(float, mape(series, fc)) / 100
     logger.info(
         f"{type(model).__name__.removesuffix('Model')} backtest WAPE: "
-        f"{score:.4f} ({score:.2%})"
+        f"{wape_score:.4f} ({wape_score:.2%}), MAPE: "
+        f"{mape_score:.4f} ({mape_score:.2%})"
     )
     return fc
 
