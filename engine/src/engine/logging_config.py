@@ -1,32 +1,10 @@
 import sys
-import time
-from contextlib import contextmanager
 from pathlib import Path
 
 from loguru import logger
 
 # Rotating log file lives under <workspace>/data/engine.log
 LOG_FILE = Path(__file__).resolve().parents[3] / "data" / "engine.log"
-
-
-@contextmanager
-def timed(label: str, level: str = "DEBUG"):
-    """Log how long a block of code takes.
-
-    Usage::
-
-        with timed("fetch weather for Alger"):
-            do_work()
-
-    Emits a single log line like ``"fetch weather for Alger took 1.23s"``.
-    """
-    start = time.perf_counter()
-    try:
-        yield
-    finally:
-        elapsed = time.perf_counter() - start
-        logger.log(level, f"{label} took {elapsed:.2f}s")
-
 
 def setup_logging(
     *,
