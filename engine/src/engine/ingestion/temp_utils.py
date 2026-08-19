@@ -21,4 +21,4 @@ def populate_externals_dbs() -> None:
         holiday_data.sync(start_date, end_date)
 
     if not weather_data.DB_PATH.exists():
-        weather_data.sync(start_date - WEATHER_LOOKBACK, end_date)
+        weather_data.sync(start_date - WEATHER_LOOKBACK, end_date)  # ty: ignore[invalid-argument-type]
