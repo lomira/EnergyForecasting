@@ -26,5 +26,5 @@ exclude = ["**/tests/**"]
 [dependency-groups]
 dev = [
     "ruff>=0.15.20",
-    "ty>=0.0.1",
+    "ty>=0.0.72",
 ]

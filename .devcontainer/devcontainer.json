@@ -1,5 +1,7 @@
 {
   "name": "CUDA Python Devcontainer",
+  "remoteUser": "ubuntu",
+  "updateRemoteUserUID": true,
   "build": {
     "dockerfile": "Dockerfile"
   },
