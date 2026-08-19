@@ -18,8 +18,16 @@ from engine.model_configs import model_hourly
 class TrainingLengthTests(TestCase):
     def test_models_define_their_training_length(self) -> None:
         self.assertEqual(
-            {config["train_length"] for config in model_hourly.values()},
+            {
+                config["train_length"]
+                for name, config in model_hourly.items()
+                if name != "peak_reconciled_lightgbm_V1"
+            },
             {24 * 21},
+        )
+        self.assertEqual(
+            model_hourly["peak_reconciled_lightgbm_V1"]["train_length"],
+            24 * 365 * 2,
         )
 
     def test_models_register_by_function_name(self) -> None:
@@ -28,6 +36,7 @@ class TrainingLengthTests(TestCase):
             {
                 "lightgbm_V1",
                 "lightgbm_nex",
+                "peak_reconciled_lightgbm_V1",
                 "tft_V1",
                 "tft_deterministic_V1",
                 "TFT_DEFAULT",
@@ -137,13 +146,17 @@ class TrainingLengthTests(TestCase):
         ):
             model = build_model.return_value
             model.supports_future_covariates = False
-            model.historical_forecasts.return_value = forecast
+            model.historical_forecasts.return_value = [forecast]
             result = run_backtest({"train_length": 123}, spec, series)
 
-        self.assertIs(result, forecast)
+        self.assertEqual(result, [forecast])
         self.assertEqual(
             model.historical_forecasts.call_args.kwargs["train_length"], 123
         )
-        self.assertIn(
-            "WAPE: 0.0000 (0.00%), MAPE: 0.0000 (0.00%)", log_info.call_args.args[0]
+        self.assertFalse(model.historical_forecasts.call_args.kwargs["last_points_only"])
+        self.assertTrue(
+            any(
+                "WAPE: 0.0000 (0.00%), MAPE: 0.0000 (0.00%)" in call.args[0]
+                for call in log_info.call_args_list
+            )
         )

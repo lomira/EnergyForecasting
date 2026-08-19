@@ -3,9 +3,10 @@
 from collections.abc import Sequence
 from typing import cast
 
+import numpy as np
 import pandas as pd
 from darts import TimeSeries
-from darts.metrics import mape, wmape
+from darts.metrics import mae, mape, wmape
 
 from engine.darts_pipeline.builder import build_data_transformers, build_model
 from engine.darts_pipeline.spec import BacktestSpec
@@ -21,6 +22,27 @@ def _select_covariates(
     if missing:
         raise ValueError(f"Covariates missing configured components: {sorted(missing)}")
     return covariates[list(features)]
+
+
+def _metrics(series: TimeSeries, forecasts: TimeSeries) -> dict[str, float]:
+    """Compute WAPE and MAPE for the series and forecasts, plus daily peak metrics."""
+
+    end_hour = cast(pd.Timestamp, series.end_time()).hour
+    offset = cast(int, pd.Timedelta(hours=24 - end_hour - 1))
+    series_peak = series.resample(freq="24h", method="max", offset=offset)
+    forecasts_peak = series.resample(freq="24h", method="max", offset=offset)
+
+    peak_bias = float(
+        np.mean(forecasts_peak.values(copy=False) - series_peak.values(copy=False))
+    )
+
+    return {
+        "wape": float(np.asarray(wmape(series, forecasts)).item()),
+        "mape": float(np.asarray(mape(series, forecasts)).item()),
+        "peak_mae": float(np.asarray(mae(series_peak, forecasts_peak)).item()),
+        "peak_wape": float(np.asarray(wmape(series_peak, forecasts_peak)).item()),
+        "peak_bias": peak_bias,
+    }
 
 
 def run_backtest(
@@ -58,18 +80,19 @@ def run_backtest(
         last_points_only=spec.last_points_only,
         verbose=False,
     )
-    if type(fc) is not TimeSeries:
-        raise ValueError(
-            "historical_forecasts returned non-TimeSeries (list of TimeSeries probably)"
-        )
-
-    wape_score = cast(float, wmape(series, fc)) / 100
-    mape_score = cast(float, mape(series, fc)) / 100
+    fc = cast(TimeSeries, fc)
+    metrics_score = _metrics(series, fc)
     logger.info(
-        f"{type(model).__name__.removesuffix('Model')} backtest WAPE: "
-        f"{wape_score:.4f} ({wape_score:.2%}), MAPE: "
-        f"{mape_score:.4f} ({mape_score:.2%})"
+        "{} backtest | "
+        "WAPE: {wape:.2f}% | "
+        "MAPE: {mape:.2f}% | "
+        "Peak MAE: {peak_mae:.2f} | "
+        "Peak WAPE: {peak_wape:.2f}% | "
+        "Peak Bias: {peak_bias:.2f}",
+        type(model).__name__,
+        **metrics_score,
     )
+
     return fc
 
 

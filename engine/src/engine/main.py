@@ -10,10 +10,7 @@ from engine.ingestion.temp_utils import populate_externals_dbs
 from engine.logging_config import logger, setup_logging
 from engine.model_configs import model_hourly
 from engine.scenario.future_scenario import random_future_scenario
-from engine.series_utils import (
-    get_covariate_ts,
-    get_load_ts,
-)
+from engine.series_utils import get_covariate_ts, get_load_ts
 
 setup_logging(level="INFO")
 
@@ -23,7 +20,7 @@ if __name__ == "__main__":
     populate_internal_db()
 
     #  -- SELECT THE MODEL ---------
-    model_config = model_hourly["tft_V1"]
+    model_config = model_hourly["nbeats_V1"]
     forecast_horizon = 24
 
     #  -- PRE PROCESSING ---------
@@ -47,7 +44,7 @@ if __name__ == "__main__":
     #  -- BACKTEST ---------
     spec = BacktestSpec(
         forecast_horizon=forecast_horizon,
-        stride=24 * 7,  # 1 week between origins
+        stride=forecast_horizon,
         retrain=True,
         start=pd.Timestamp(year=2020, month=1, day=1),  # ty: ignore[invalid-argument-type]
     )
