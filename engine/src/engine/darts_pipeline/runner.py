@@ -29,8 +29,10 @@ def _metrics(series: TimeSeries, forecasts: TimeSeries) -> dict[str, float]:
 
     end_hour = cast(pd.Timestamp, series.end_time()).hour
     offset = cast(int, pd.Timedelta(hours=24 - end_hour - 1))
-    series_peak = series.resample(freq="24h", method="max", offset=offset)
-    forecasts_peak = series.resample(freq="24h", method="max", offset=offset)
+    series_peak = series.slice_intersect(forecasts).resample(
+        freq="24h", method="max", offset=offset
+    )
+    forecasts_peak = forecasts.resample(freq="24h", method="max", offset=offset)
 
     peak_bias = float(
         np.mean(forecasts_peak.values(copy=False) - series_peak.values(copy=False))
@@ -88,7 +90,7 @@ def run_backtest(
         "MAPE: {mape:.2f}% | "
         "Peak MAE: {peak_mae:.2f} | "
         "Peak WAPE: {peak_wape:.2f}% | "
-        "Peak Bias: {peak_bias:.2f}",
+        "Peak Bias: {peak_bias:.2f} MW",
         type(model).__name__,
         **metrics_score,
     )

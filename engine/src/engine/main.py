@@ -20,7 +20,7 @@ if __name__ == "__main__":
     populate_internal_db()
 
     #  -- SELECT THE MODEL ---------
-    model_config = model_hourly["nbeats_V1"]
+    model_config = model_hourly["lightgbm_nex"]
     forecast_horizon = 24
 
     #  -- PRE PROCESSING ---------
@@ -74,6 +74,6 @@ if __name__ == "__main__":
         future_cov=future_cov,
         future_scenario=future_scenario,
     )
-    logger.info(fcst.to_dataframe())
+    logger.info(f"\n {fcst.to_dataframe()}")
 
     logger.success("Pipeline complete.")
