@@ -7,6 +7,30 @@ import pandas as pd
 from darts import TimeSeries
 
 from engine.ingestion.internal_db import read_future_covariates
+
+
+def validate_hourly_scenario(
+    scenario: TimeSeries,
+    references: Mapping[str, pd.DatetimeIndex],
+) -> None:
+    """Validate a materialized hourly scenario and its references."""
+    data = scenario.to_dataframe()
+    if not isinstance(data.index, pd.DatetimeIndex):
+        raise TypeError("Scenario must use a DatetimeIndex")
+    if set(data.columns) != set(references):
+        raise ValueError("Scenario variables and reference variables must match")
+    if data.isna().any().any():
+        raise ValueError("Scenario values must not be null")
+    expected_index = pd.date_range(data.index.min(), data.index.max(), freq="h")
+    if not data.index.equals(expected_index):
+        raise ValueError("Scenario must be a continuous hourly series")
+    if any(
+        len(timestamps) != len(data) or timestamps.isna().any()
+        for timestamps in references.values()
+    ):
+        raise ValueError("Scenario references must match its length and not be null")
+
+
 from load_data import get_date_range
 
 
@@ -25,8 +49,7 @@ def create_hourly_scenario(
 
     target_index = pd.date_range(start_date, end_date, freq="h", name="datetime")
     if not all(
-        isinstance(timestamps, pd.DatetimeIndex)
-        for timestamps in references.values()
+        isinstance(timestamps, pd.DatetimeIndex) for timestamps in references.values()
     ):
         raise TypeError("Scenario references must be pandas DatetimeIndex values")
     reference_indexes = dict(references)
@@ -58,7 +81,9 @@ def create_hourly_scenario(
             raise ValueError(f"Null reference values for {variable}")
         values[variable] = selected.to_numpy()
 
-    return TimeSeries.from_dataframe(pd.DataFrame(values, index=target_index))
+    scenario = TimeSeries.from_dataframe(pd.DataFrame(values, index=target_index))
+    validate_hourly_scenario(scenario, reference_indexes)
+    return scenario
 
 
 def random_future_scenario(

@@ -1,6 +1,7 @@
 """Derived SQLite data consumed by the forecasting engine."""
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import cast
 
@@ -61,7 +62,7 @@ def populate_internal_db(*, db_path: Path = DB_PATH) -> None:
     _validate_covariates(future_covariates)
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection, connection:
         corrected_load.to_sql(
             "corrected_load",
             connection,
