@@ -5,6 +5,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import pandas as pd
+import weather_data
 from engine.ingestion.internal_db import (
     populate_internal_db,
     read_corrected_load,
@@ -13,6 +14,49 @@ from engine.ingestion.internal_db import (
 
 
 class InternalDatabaseTests(TestCase):
+    @patch("engine.featurize.weather.weather_data.read")
+    @patch("engine.ingestion.internal_db.holiday_features")
+    @patch("engine.ingestion.internal_db.load_data.read")
+    def test_population_stores_national_weather_averages(
+        self, read_load, read_holidays, read_weather
+    ) -> None:
+        index = pd.date_range("2024-01-01", periods=3, freq="h")
+        read_load.return_value = pd.DataFrame({"load_mw": [100, 110, 120]}, index=index)
+        read_holidays.return_value = pd.DataFrame({"holidays": False}, index=index)
+        city_values = {"Alger": 10.0, "Constantine": 20.0, "Djelfa": 30.0}
+        read_weather.return_value = pd.DataFrame(
+            {
+                f"{city}_{metric}": city_values[city]
+                for metric in weather_data.WEATHER_API_PARAMS
+                for city in city_values
+            },
+            index=index,
+        )
+        read_weather.return_value.loc[index[0], "Djelfa_precipitation"] = None
+        weights = {
+            str(city["name"]): float(city["weight"])
+            for city in weather_data.CITIES
+        }
+        expected = sum(city_values[city] * weights[city] for city in city_values) / sum(
+            weights.values()
+        )
+
+        with TemporaryDirectory() as directory:
+            db_path = Path(directory) / "internal.sqlite3"
+            populate_internal_db(db_path=db_path)
+            stored = read_future_covariates(index[0], index[-1], db_path=db_path)
+
+        self.assertAlmostEqual(
+            stored.iloc[0]["NationalAverage_temperature_2m"], expected
+        )
+        self.assertTrue(pd.isna(stored.iloc[0]["NationalAverage_precipitation"]))
+        self.assertTrue(
+            all(
+                f"NationalAverage_{metric}" in stored
+                for metric in weather_data.WEATHER_API_PARAMS
+            )
+        )
+
     @patch("engine.ingestion.internal_db.load_data.read")
     def test_population_rejects_incomplete_external_load(self, read_load) -> None:
         index = pd.date_range("2024-01-01", periods=3, freq="h")
