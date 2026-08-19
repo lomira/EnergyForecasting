@@ -87,6 +87,10 @@ class WeatherDataTests(TestCase):
         archive_call, previous_call = openmeteo.weather_api.call_args_list
         self.assertEqual(archive_call.kwargs["params"]["start_date"], "2008-01-01")
         self.assertEqual(previous_call.kwargs["params"]["start_date"], "2024-01-01")
+        self.assertEqual(archive_call.kwargs["params"]["models"], "era5")
+        self.assertEqual(
+            previous_call.kwargs["params"]["models"], "ecmwf_ifs025"
+        )
 
     def test_sync_merges_archive_actuals_with_previous_runs(self) -> None:
         timestamp = pd.Timestamp("2024-01-01 00:00")

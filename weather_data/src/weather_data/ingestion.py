@@ -29,6 +29,7 @@ def _log_cache_hit(response, *args, **kwargs):
 def _fetch_source(
     openmeteo: openmeteo_requests.Client,
     url: str,
+    model: str,
     city: Mapping[str, object],
     api_params: tuple[str, ...],
     from_date: pd.Timestamp,
@@ -39,6 +40,7 @@ def _fetch_source(
         params={
             "latitude": city["lat"],
             "longitude": city["lon"],
+            "models": model,
             "hourly": api_params,
             "start_date": from_date.strftime("%Y-%m-%d"),
             "end_date": to_date.strftime("%Y-%m-%d"),
@@ -74,7 +76,12 @@ def _fetch_rows(
     )
     rows: dict[tuple[pd.Timestamp, str], dict[str, object]] = {}
     sources = [
-        ("https://archive-api.open-meteo.com/v1/archive", WEATHER_METRICS, from_date)
+        (
+            "https://archive-api.open-meteo.com/v1/archive",
+            "era5",
+            WEATHER_METRICS,
+            from_date,
+        )
     ]
     # Previous runs are only available from 2024 onwards.
     previous_runs_from = max(from_date, pd.Timestamp("2024-01-01"))
@@ -82,6 +89,7 @@ def _fetch_rows(
         sources.append(
             (
                 "https://previous-runs-api.open-meteo.com/v1/forecast",
+                "ecmwf_ifs025",
                 tuple(
                     param
                     for param in WEATHER_API_PARAMS
@@ -91,11 +99,11 @@ def _fetch_rows(
             )
         )
     for city in CITIES:
-        for url, api_params, source_from in sources:
+        for url, model, api_params, source_from in sources:
             if type(source_from) is not pd.Timestamp:
                 raise TypeError(f"Expected pd.Timestamp, got {type(source_from)}")
             for timestamp, values in _fetch_source(
-                openmeteo, url, city, api_params, source_from, to_date
+                openmeteo, url, model, city, api_params, source_from, to_date
             ).iterrows():
                 timestamp = cast(pd.Timestamp, timestamp)
                 key = (timestamp, str(city["name"]))

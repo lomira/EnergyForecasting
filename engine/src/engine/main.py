@@ -71,6 +71,7 @@ if __name__ == "__main__":
     forecast_end = forecast_start + timedelta(hours=forecast_horizon_needed)
 
     forecast_training_series = series.drop_after(forecast_start)
+    # TODO: Replace this historical scenario with a live ECMWF IFS forecast.
     future_scenario = random_future_scenario(
         model_config["feature_subset"],
         forecast_start,
