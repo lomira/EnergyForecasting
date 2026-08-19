@@ -38,5 +38,5 @@
       }
     }
   },
-  "postCreateCommand": "uv sync"
+  "postCreateCommand": "uv python install 3.14 && uv sync --python 3.14"
 }
