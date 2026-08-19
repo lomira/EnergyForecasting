@@ -143,19 +143,14 @@ class TrainingLengthTests(TestCase):
         ):
             model = build_model.return_value
             model.supports_future_covariates = False
-            model.historical_forecasts.return_value = [forecast]
+            model.historical_forecasts.return_value = forecast
             result = run_backtest({"train_length": 123}, spec, series)
 
-        self.assertEqual(result, [forecast])
+        self.assertIs(result, forecast)
         self.assertEqual(
             model.historical_forecasts.call_args.kwargs["train_length"], 123
         )
-        self.assertFalse(
+        self.assertTrue(
             model.historical_forecasts.call_args.kwargs["last_points_only"]
         )
-        self.assertTrue(
-            any(
-                "WAPE: 0.0000 (0.00%), MAPE: 0.0000 (0.00%)" in call.args[0]
-                for call in log_info.call_args_list
-            )
-        )
+        self.assertEqual(len(log_info.call_args_list), 1)

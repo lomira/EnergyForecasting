@@ -6,7 +6,7 @@ from typing import cast
 import numpy as np
 import pandas as pd
 from darts import TimeSeries
-from darts.metrics import mae, mape, wmape
+from darts.metrics import mape
 
 from engine.darts_pipeline.builder import build_data_transformers, build_model
 from engine.darts_pipeline.spec import BacktestSpec
@@ -24,27 +24,50 @@ def _select_covariates(
     return covariates[list(features)]
 
 
-def _metrics(series: TimeSeries, forecasts: TimeSeries) -> dict[str, float]:
-    """Compute WAPE and MAPE for the series and forecasts, plus daily peak metrics."""
-
-    end_hour = cast(pd.Timestamp, series.end_time()).hour
-    offset = cast(int, pd.Timedelta(hours=24 - end_hour - 1))
-    series_peak = series.slice_intersect(forecasts).resample(
-        freq="24h", method="max", offset=offset
-    )
-    forecasts_peak = forecasts.resample(freq="24h", method="max", offset=offset)
-
-    peak_bias = float(
-        np.mean(forecasts_peak.values(copy=False) - series_peak.values(copy=False))
-    )
-
+def _period_metrics(
+    series: TimeSeries, forecasts: TimeSeries, frequency: str
+) -> dict[str, float]:
+    peaks = pd.concat(
+        {
+            "actual": series.to_series().resample(frequency).max(),
+            "forecast": forecasts.to_series().resample(frequency).max(),
+        },
+        axis=1,
+        join="inner",
+    ).dropna()
+    errors = peaks["forecast"] - peaks["actual"]
     return {
-        "wape": float(np.asarray(wmape(series, forecasts)).item()),
-        "mape": float(np.asarray(mape(series, forecasts)).item()),
-        "peak_mae": float(np.asarray(mae(series_peak, forecasts_peak)).item()),
-        "peak_wape": float(np.asarray(wmape(series_peak, forecasts_peak)).item()),
-        "peak_bias": peak_bias,
+        "mae": float(errors.abs().mean()),
+        "wape": float(errors.abs().sum() / peaks["actual"].abs().sum() * 100),
+        "bias": float(errors.mean()),
     }
+
+
+def _metrics(series: TimeSeries, forecasts: TimeSeries) -> dict[str, float]:
+    """Compute load-curve, daily-peak, and monthly-peak metrics."""
+    hourly = _period_metrics(series, forecasts, "h")
+    daily = _period_metrics(series, forecasts, "D")
+    monthly = _period_metrics(series, forecasts, "MS")
+    return {
+        **{f"hourly_{name}": value for name, value in hourly.items()},
+        "hourly_mape": float(np.asarray(mape(series, forecasts)).item()),
+        **{f"daily_peak_{name}": value for name, value in daily.items()},
+        **{f"monthly_peak_{name}": value for name, value in monthly.items()},
+    }
+
+
+def _log_metrics(label: str, scores: dict[str, float]) -> None:
+    logger.info(
+        "{} | Hourly MAE: {hourly_mae:.2f} MW | "
+        "WAPE: {hourly_wape:.2f}% | MAPE: {hourly_mape:.2f}% | "
+        "Bias: {hourly_bias:.2f} MW | "
+        "Daily peak MAE: {daily_peak_mae:.2f} MW | "
+        "WAPE: {daily_peak_wape:.2f}% | Bias: {daily_peak_bias:.2f} MW | "
+        "Monthly peak MAE: {monthly_peak_mae:.2f} MW | "
+        "WAPE: {monthly_peak_wape:.2f}% | Bias: {monthly_peak_bias:.2f} MW",
+        label,
+        **scores,
+    )
 
 
 def run_backtest(
@@ -83,17 +106,8 @@ def run_backtest(
         verbose=False,
     )
     fc = cast(TimeSeries, fc)
-    metrics_score = _metrics(series, fc)
-    logger.info(
-        "{} backtest | "
-        "WAPE: {wape:.2f}% | "
-        "MAPE: {mape:.2f}% | "
-        "Peak MAE: {peak_mae:.2f} | "
-        "Peak WAPE: {peak_wape:.2f}% | "
-        "Peak Bias: {peak_bias:.2f} MW",
-        type(model).__name__,
-        **metrics_score,
-    )
+    label = f"{type(model).__name__} backtest"
+    _log_metrics(label, _metrics(series, fc))
 
     return fc
 

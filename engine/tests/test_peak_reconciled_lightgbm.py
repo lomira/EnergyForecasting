@@ -42,23 +42,25 @@ class PeakReconciledLightGBMTests(TestCase):
         )
         self.assertTrue(reconciled.time_index.equals(hourly.time_index))
 
-    def test_daily_peak_metrics(self) -> None:
-        index = pd.date_range("2024-01-01", periods=48, freq="h")
+    def test_calendar_peak_metrics(self) -> None:
+        index = pd.date_range("2023-12-31", periods=48, freq="h")
         actual_values = np.r_[
             np.arange(1, 11), np.ones(14), np.arange(1, 21), np.ones(4)
         ]
         series = TimeSeries.from_times_and_values(index, actual_values)
-        first = TimeSeries.from_times_and_values(index[:24], np.r_[12, np.ones(23)])
-        second = TimeSeries.from_times_and_values(index[24:], np.r_[19, np.ones(23)])
+        forecast = TimeSeries.from_times_and_values(
+            index, np.r_[12, np.ones(23), 19, np.ones(23)]
+        )
 
-        _, _, metrics = _metrics(series, [first, second])
-
-        self.assertIsNotNone(metrics)
-        peak_mae, peak_wape, peak_bias, peak_bias_percentage = metrics
-        self.assertAlmostEqual(peak_mae, 1.5)
-        self.assertAlmostEqual(peak_wape, 0.125)
-        self.assertAlmostEqual(peak_bias, 0.5)
-        self.assertAlmostEqual(peak_bias_percentage, 1 / 30)
+        metrics = _metrics(series, forecast)
+        self.assertAlmostEqual(metrics["hourly_mae"], 5.5)
+        self.assertAlmostEqual(metrics["hourly_bias"], -103 / 24)
+        self.assertAlmostEqual(metrics["daily_peak_mae"], 1.5)
+        self.assertAlmostEqual(metrics["daily_peak_wape"], 10.0)
+        self.assertAlmostEqual(metrics["daily_peak_bias"], 0.5)
+        self.assertAlmostEqual(metrics["monthly_peak_mae"], 1.5)
+        self.assertAlmostEqual(metrics["monthly_peak_wape"], 10.0)
+        self.assertAlmostEqual(metrics["monthly_peak_bias"], 0.5)
 
         spec = BacktestSpec(
             forecast_horizon=24,
@@ -76,11 +78,17 @@ class PeakReconciledLightGBMTests(TestCase):
         ):
             model = build_model.return_value
             model.supports_future_covariates = False
-            model.historical_forecasts.return_value = [first, second]
-            run_backtest({"train_length": 24}, spec, series)
+            model.historical_forecasts.return_value = forecast
+            result = run_backtest({"train_length": 24}, spec, series)
 
-        self.assertIn("daily peak MAE: 1.50 MW", log_info.call_args.args[0])
-        self.assertIn("bias: 0.50 MW (3.33%)", log_info.call_args.args[0])
+        self.assertIs(result, forecast)
+        self.assertTrue(
+            model.historical_forecasts.call_args.kwargs["last_points_only"]
+        )
+        self.assertEqual(
+            [call.args[1] for call in log_info.call_args_list],
+            ["MagicMock backtest"],
+        )
 
     def test_model_works_through_forecast_and_backtest(self) -> None:
         train_length = 24 * 10
