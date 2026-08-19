@@ -44,7 +44,9 @@ class PeakReconciledLightGBMTests(TestCase):
 
     def test_daily_peak_metrics(self) -> None:
         index = pd.date_range("2024-01-01", periods=48, freq="h")
-        actual_values = np.r_[np.arange(1, 11), np.ones(14), np.arange(1, 21), np.ones(4)]
+        actual_values = np.r_[
+            np.arange(1, 11), np.ones(14), np.arange(1, 21), np.ones(4)
+        ]
         series = TimeSeries.from_times_and_values(index, actual_values)
         first = TimeSeries.from_times_and_values(index[:24], np.r_[12, np.ones(23)])
         second = TimeSeries.from_times_and_values(index[24:], np.r_[19, np.ones(23)])
@@ -82,9 +84,7 @@ class PeakReconciledLightGBMTests(TestCase):
 
     def test_model_works_through_forecast_and_backtest(self) -> None:
         train_length = 24 * 10
-        target_index = pd.date_range(
-            "2024-01-01", periods=train_length + 48, freq="h"
-        )
+        target_index = pd.date_range("2024-01-01", periods=train_length + 48, freq="h")
         covariate_index = target_index
         target = TimeSeries.from_times_and_values(
             target_index, 100 + np.sin(np.arange(len(target_index)) / 12)

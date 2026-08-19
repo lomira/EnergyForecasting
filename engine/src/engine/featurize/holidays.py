@@ -6,9 +6,7 @@ import holiday_data
 from engine.featurize.features import Feature
 
 
-def holiday_features(
-    from_date: pd.Timestamp, to_date: pd.Timestamp
-) -> pd.DataFrame:
+def holiday_features(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.DataFrame:
     holidays = holiday_data.read(from_date, to_date)
     index = pd.date_range(
         start=from_date.floor("d"),

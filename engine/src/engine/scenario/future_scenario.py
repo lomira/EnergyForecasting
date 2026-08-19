@@ -7,6 +7,7 @@ import pandas as pd
 from darts import TimeSeries
 
 from engine.ingestion.internal_db import read_future_covariates
+from load_data import get_date_range
 
 
 def validate_hourly_scenario(
@@ -29,9 +30,6 @@ def validate_hourly_scenario(
         for timestamps in references.values()
     ):
         raise ValueError("Scenario references must match its length and not be null")
-
-
-from load_data import get_date_range
 
 
 def create_hourly_scenario(

@@ -91,9 +91,7 @@ def read_hourly_scenario(
         )
     if data.empty:
         raise ValueError(f"Unknown hourly scenario: {scenario_id}")
-    frame = data.pivot(
-        index="target_datetime", columns="variable_name", values="value"
-    )
+    frame = data.pivot(index="target_datetime", columns="variable_name", values="value")
     frame.index.name = "datetime"
     frame.columns.name = None
     return TimeSeries.from_dataframe(frame, fill_missing_dates=True, freq="h")

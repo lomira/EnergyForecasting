@@ -52,9 +52,7 @@ class WeatherDataTests(TestCase):
             upsert(rows, db_path=db_path)
             data = read(before, available, db_path=db_path)
 
-        self.assertEqual(
-            data.loc[before, "Alger_temperature_2m_previous_day1"], 10.0
-        )
+        self.assertEqual(data.loc[before, "Alger_temperature_2m_previous_day1"], 10.0)
         self.assertTrue(
             pd.isna(data.loc[missing, "Alger_temperature_2m_previous_day1"])
         )
@@ -170,6 +168,4 @@ class WeatherDataTests(TestCase):
             self.assertEqual(data.iloc[0]["Alger_temperature_2m"], 12.0)
             self.assertEqual(data.iloc[0]["Constantine_relative_humidity_2m"], 55.0)
             self.assertIn("Alger_temperature_2m_previous_day1", data)
-            self.assertTrue(
-                pd.isna(data.iloc[0]["Alger_temperature_2m_previous_day1"])
-            )
+            self.assertTrue(pd.isna(data.iloc[0]["Alger_temperature_2m_previous_day1"]))

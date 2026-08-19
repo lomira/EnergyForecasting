@@ -63,10 +63,7 @@ class TrainingLengthTests(TestCase):
             dict(direct.pl_module_params),
         )
         self.assertEqual(
-            {
-                key: configured.trainer_params[key]
-                for key in direct.trainer_params
-            },
+            {key: configured.trainer_params[key] for key in direct.trainer_params},
             direct.trainer_params,
         )
         self.assertEqual(
@@ -153,7 +150,9 @@ class TrainingLengthTests(TestCase):
         self.assertEqual(
             model.historical_forecasts.call_args.kwargs["train_length"], 123
         )
-        self.assertFalse(model.historical_forecasts.call_args.kwargs["last_points_only"])
+        self.assertFalse(
+            model.historical_forecasts.call_args.kwargs["last_points_only"]
+        )
         self.assertTrue(
             any(
                 "WAPE: 0.0000 (0.00%), MAPE: 0.0000 (0.00%)" in call.args[0]

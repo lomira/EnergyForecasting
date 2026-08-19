@@ -81,8 +81,7 @@ class InternalDatabaseTests(TestCase):
         )
         read_weather.return_value.loc[index[0], "Djelfa_precipitation"] = 30.0
         weights = {
-            str(city["name"]): float(city["weight"])
-            for city in weather_data.CITIES
+            str(city["name"]): float(city["weight"]) for city in weather_data.CITIES
         }
         expected = sum(city_values[city] * weights[city] for city in city_values) / sum(
             weights.values()

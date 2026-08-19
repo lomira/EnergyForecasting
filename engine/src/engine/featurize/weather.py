@@ -9,9 +9,7 @@ WEATHER_WINDOWS = (24, 168)
 WEATHER_LOOKBACK = pd.Timedelta(hours=WEATHER_LAG + max(WEATHER_WINDOWS) - 1)
 
 
-def weather_features(
-    from_date: pd.Timestamp, to_date: pd.Timestamp
-) -> pd.DataFrame:
+def weather_features(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.DataFrame:
     weather = weather_data.read(from_date - WEATHER_LOOKBACK, to_date)
     weights = pd.Series(
         {str(city["name"]): float(city["weight"]) for city in weather_data.CITIES}

@@ -30,7 +30,9 @@ def aggregate_blocks(
     frame = values.to_dataframe()
     grouped = frame.groupby(np.arange(expected) // HOURS_PER_DAY)
     daily = grouped.max() if method == "max" else grouped.mean()
-    daily.index = pd.date_range(start, periods=blocks, freq="24h", name=frame.index.name)
+    daily.index = pd.date_range(
+        start, periods=blocks, freq="24h", name=frame.index.name
+    )
     return TimeSeries.from_dataframe(daily)
 
 
@@ -139,9 +141,7 @@ class PeakReconciledLightGBMModel(GlobalForecastingModel):
         )
         self._daily_model.fit(
             daily_target,
-            future_covariates=self._daily_covariates(
-                future_covariates, daily_target
-            ),
+            future_covariates=self._daily_covariates(future_covariates, daily_target),
             verbose=verbose,
         )
         return self

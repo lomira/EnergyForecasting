@@ -20,21 +20,15 @@ class ScenarioStoreTests(TestCase):
             )
         )
         references = {
-            "temperature": pd.DatetimeIndex(
-                ["2020-01-01 00:00", "2019-01-01 01:00"]
-            ),
-            "precipitation": pd.DatetimeIndex(
-                ["2018-01-01 00:00", "2020-01-01 01:00"]
-            ),
+            "temperature": pd.DatetimeIndex(["2020-01-01 00:00", "2019-01-01 01:00"]),
+            "precipitation": pd.DatetimeIndex(["2018-01-01 00:00", "2020-01-01 01:00"]),
         }
         self.assertIsNone(validate_hourly_scenario(scenario, references))
 
         with TemporaryDirectory() as directory:
             db_path = Path(directory) / "internal.sqlite3"
             scenario_id = save_hourly_scenario(scenario, references, db_path=db_path)
-            restored = read_hourly_scenario(
-                scenario_id, db_path=db_path
-            ).to_dataframe()
+            restored = read_hourly_scenario(scenario_id, db_path=db_path).to_dataframe()
             with sqlite3.connect(db_path) as connection:
                 stored_references = connection.execute(
                     """

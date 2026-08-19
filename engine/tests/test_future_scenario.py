@@ -81,8 +81,6 @@ class FutureScenarioTests(TestCase):
 
         self.assertIs(scenario, expected)
         references = create_scenario.call_args.args[2]
-        expected_references = pd.date_range(
-            "2020-01-02 00:00", periods=3, freq="h"
-        )
+        expected_references = pd.date_range("2020-01-02 00:00", periods=3, freq="h")
         self.assertTrue(references["temperature"].equals(expected_references))
         self.assertTrue(references["holidays"].equals(expected_references))
