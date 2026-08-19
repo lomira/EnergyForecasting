@@ -15,6 +15,19 @@ from engine.featurize.weather import weather_features
 DB_PATH = load_data.DB_PATH.with_name("internal.sqlite3")
 
 
+def _validate_load_data(data: pd.DataFrame) -> None:
+    """Reject incomplete external load data before creating corrected data."""
+    if data.empty or data.index.isna().any() or data["load_mw"].isna().any():
+        raise ValueError("Load data must not contain missing values")
+    if data["load_mw"].lt(0).any():
+        raise ValueError("Load values must be non-negative")
+    if data.index.has_duplicates:
+        raise ValueError("Load timestamps must not contain duplicates")
+    expected_index = pd.date_range(data.index.min(), data.index.max(), freq="h")
+    if not data.index.equals(expected_index):
+        raise ValueError("Load data must be a continuous hourly series")
+
+
 def _future_covariates(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.DataFrame:
     weather = weather_features(from_date, to_date)
     holidays = holiday_features(from_date, to_date)
@@ -27,6 +40,7 @@ def _future_covariates(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.Dat
 def populate_internal_db(*, db_path: Path = DB_PATH) -> None:
     """Replace the corrected-load and future-covariate tables."""
     corrected_load = load_data.read()
+    _validate_load_data(corrected_load)
     from_date = cast(pd.Timestamp, corrected_load.index.min())
     to_date = cast(pd.Timestamp, corrected_load.index.max())
     future_covariates = _future_covariates(from_date, to_date)

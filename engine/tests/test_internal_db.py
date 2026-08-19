@@ -13,6 +13,28 @@ from engine.ingestion.internal_db import (
 
 
 class InternalDatabaseTests(TestCase):
+    @patch("engine.ingestion.internal_db.load_data.read")
+    def test_population_rejects_incomplete_external_load(self, read_load) -> None:
+        index = pd.date_range("2024-01-01", periods=3, freq="h")
+        valid = pd.DataFrame({"load_mw": [100.0, 110.0, 120.0]}, index=index)
+        cases = {
+            "negative": (valid.assign(load_mw=[100.0, -1.0, 120.0]), "non-negative"),
+            "duplicate": (
+                valid.set_axis([index[0], index[0], index[2]]),
+                "duplicates",
+            ),
+            "discontinuous": (valid.drop(index[1]), "continuous"),
+            "missing": (valid.assign(load_mw=[100.0, None, 120.0]), "missing"),
+        }
+        for name, (data, message) in cases.items():
+            read_load.return_value = data
+            with (
+                self.subTest(name=name),
+                TemporaryDirectory() as directory,
+                self.assertRaisesRegex(ValueError, message),
+            ):
+                populate_internal_db(db_path=Path(directory) / "internal.sqlite3")
+
     @patch("engine.ingestion.internal_db.holiday_data.read")
     @patch("engine.ingestion.internal_db.weather_data.read")
     @patch("engine.ingestion.internal_db.load_data.read")
