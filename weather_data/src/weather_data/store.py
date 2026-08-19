@@ -91,4 +91,14 @@ def read(
         dropna=False,
     ).sort_index()
     tidy.columns = [f"{city}_{metric}" for metric, city in tidy.columns]
+    # The Previous Runs API starts returning data from 2024-01-01.
+    # Before that we will assume perfect prevision
+    # Alger_temperature_previous_day1 = Alger_temperature
+    before_previous_runs = tidy.index < pd.Timestamp("2024-01-01")
+    for column in tidy.columns:
+        if "_previous_day" in column:
+            archive_column = column.rsplit("_previous_day", 1)[0]
+            tidy.loc[before_previous_runs, column] = tidy.loc[
+                before_previous_runs, archive_column
+            ]
     return tidy

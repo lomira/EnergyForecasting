@@ -3,6 +3,7 @@ from pathlib import Path
 import holiday_data
 import load_data
 import weather_data
+from engine.featurize.weather import WEATHER_LOOKBACK
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
 
@@ -20,4 +21,4 @@ def populate_externals_dbs() -> None:
         holiday_data.sync(start_date, end_date)
 
     if not weather_data.DB_PATH.exists():
-        weather_data.sync(start_date, end_date)
+        weather_data.sync(start_date - WEATHER_LOOKBACK, end_date)

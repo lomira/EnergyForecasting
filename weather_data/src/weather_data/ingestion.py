@@ -76,8 +76,8 @@ def _fetch_rows(
     sources = [
         ("https://archive-api.open-meteo.com/v1/archive", WEATHER_METRICS, from_date)
     ]
-    # previous-runs API only has data from 2016-01-01 onwards, so we need to limit the from_date for that source
-    previous_runs_from = max(from_date, pd.Timestamp("2016-01-01"))
+    # Previous runs are only available from 2024 onwards.
+    previous_runs_from = max(from_date, pd.Timestamp("2024-01-01"))
     if previous_runs_from <= to_date:
         sources.append(
             (

@@ -4,15 +4,15 @@ import pandas as pd
 
 import weather_data
 
+WEATHER_LAG = 24
+WEATHER_WINDOWS = (24, 168)
+WEATHER_LOOKBACK = pd.Timedelta(hours=WEATHER_LAG + max(WEATHER_WINDOWS) - 1)
+
 
 def weather_features(
     from_date: pd.Timestamp, to_date: pd.Timestamp
 ) -> pd.DataFrame:
-    lag = 24
-    windows = (24, 168)
-    weather = weather_data.read(
-        from_date - pd.Timedelta(hours=lag + max(windows) - 1), to_date
-    )
+    weather = weather_data.read(from_date - WEATHER_LOOKBACK, to_date)
     weights = pd.Series(
         {str(city["name"]): float(city["weight"]) for city in weather_data.CITIES}
     )
@@ -25,8 +25,8 @@ def weather_features(
 
     features: dict[str, pd.Series] = {}
     for column in weather.columns:
-        shifted = weather[column].shift(lag)
-        for window in windows:
+        shifted = weather[column].shift(WEATHER_LAG)
+        for window in WEATHER_WINDOWS:
             rolling = shifted.rolling(window, min_periods=window)
             features[f"{column}__roll_mean{window}_lag24"] = rolling.mean()
             features[f"{column}__roll_std{window}_lag24"] = rolling.std()
