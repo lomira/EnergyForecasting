@@ -6,7 +6,7 @@ import pandas as pd
 from darts import TimeSeries
 
 from engine.darts_pipeline.runner import (
-    _metrics,
+    backtest_metrics,
     run_backtest,
     run_forecast,
 )
@@ -52,7 +52,7 @@ class PeakReconciledLightGBMTests(TestCase):
             index, np.r_[12, np.ones(23), 19, np.ones(23)]
         )
 
-        metrics = _metrics(series, forecast)
+        metrics = backtest_metrics(series, forecast)
         self.assertAlmostEqual(metrics["hourly_mae"], 5.5)
         self.assertAlmostEqual(metrics["hourly_bias"], -103 / 24)
         self.assertAlmostEqual(metrics["daily_peak_mae"], 1.5)

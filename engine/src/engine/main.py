@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pandas as pd
 
+from engine.darts_pipeline.backtest_store import save_backtest_result
 from engine.darts_pipeline.builder import build_model
 from engine.darts_pipeline.runner import run_backtest, run_forecast
 from engine.darts_pipeline.spec import BacktestSpec
@@ -20,7 +21,8 @@ if __name__ == "__main__":
     populate_internal_db()
 
     #  -- SELECT THE MODEL ---------
-    model_config = model_hourly["lightgbm_nex"]
+    model_config_name = "lightgbm_nex"
+    model_config = model_hourly[model_config_name]
     forecast_horizon = 24
 
     #  -- PRE PROCESSING ---------
@@ -50,7 +52,15 @@ if __name__ == "__main__":
     )
 
     logger.info("Running backtest (this may take a moment)…")
-    run_backtest(model_config, spec, series, future_cov=future_cov)
+    backtest = run_backtest(model_config, spec, series, future_cov=future_cov)
+    backtest_id = save_backtest_result(
+        model_config_name,
+        model_config,
+        spec,
+        series,
+        backtest,
+    )
+    logger.success(f"Saved backtest result {backtest_id}")
 
     #  -- FORECAST ---------
 

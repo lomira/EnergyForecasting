@@ -43,7 +43,7 @@ def _period_metrics(
     }
 
 
-def _metrics(series: TimeSeries, forecasts: TimeSeries) -> dict[str, float]:
+def backtest_metrics(series: TimeSeries, forecasts: TimeSeries) -> dict[str, float]:
     """Compute load-curve, daily-peak, and monthly-peak metrics."""
     hourly = _period_metrics(series, forecasts, "h")
     daily = _period_metrics(series, forecasts, "D")
@@ -107,7 +107,7 @@ def run_backtest(
     )
     fc = cast(TimeSeries, fc)
     label = f"{type(model).__name__} backtest"
-    _log_metrics(label, _metrics(series, fc))
+    _log_metrics(label, backtest_metrics(series, fc))
 
     return fc
 
