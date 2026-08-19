@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import weather_data
+from engine.featurize.weather import weather_features
 from engine.ingestion.internal_db import (
     populate_internal_db,
     read_corrected_load,
@@ -14,6 +15,40 @@ from engine.ingestion.internal_db import (
 
 
 class InternalDatabaseTests(TestCase):
+    @patch("engine.ingestion.internal_db._future_covariates")
+    @patch("engine.ingestion.internal_db.load_data.read")
+    def test_population_validates_covariates_without_rejecting_negative_values(
+        self, read_load, future_covariates
+    ) -> None:
+        index = pd.date_range("2024-01-01", periods=3, freq="h")
+        read_load.return_value = pd.DataFrame({"load_mw": [100, 110, 120]}, index=index)
+        valid = pd.DataFrame({"temperature": [-5.0, 0.0, 5.0]}, index=index)
+        invalid = {
+            "duplicate": (
+                valid.set_axis([index[0], index[0], index[2]]),
+                "duplicates",
+            ),
+            "discontinuous": (valid.drop(index[1]), "continuous"),
+            "missing": (
+                valid.assign(temperature=[-5.0, None, 5.0]),
+                "missing values",
+            ),
+        }
+        for name, (data, message) in invalid.items():
+            future_covariates.return_value = data
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                db_path = Path(directory) / "internal.sqlite3"
+                with self.assertRaisesRegex(ValueError, message):
+                    populate_internal_db(db_path=db_path)
+                self.assertFalse(db_path.exists())
+
+        future_covariates.return_value = valid
+        with TemporaryDirectory() as directory:
+            db_path = Path(directory) / "internal.sqlite3"
+            populate_internal_db(db_path=db_path)
+            stored = read_future_covariates(index[0], index[-1], db_path=db_path)
+        self.assertEqual(stored.iloc[0]["temperature"], -5.0)
+
     @patch("engine.featurize.weather.weather_data.read")
     @patch("engine.ingestion.internal_db.holiday_features")
     @patch("engine.ingestion.internal_db.load_data.read")
@@ -21,6 +56,9 @@ class InternalDatabaseTests(TestCase):
         self, read_load, read_holidays, read_weather
     ) -> None:
         index = pd.date_range("2024-01-01", periods=3, freq="h")
+        weather_index = pd.date_range(
+            index[0] - pd.Timedelta(hours=191), index[-1], freq="h"
+        )
         read_load.return_value = pd.DataFrame({"load_mw": [100, 110, 120]}, index=index)
         read_holidays.return_value = pd.DataFrame({"holidays": False}, index=index)
         city_values = {"Alger": 10.0, "Constantine": 20.0, "Djelfa": 30.0}
@@ -30,9 +68,17 @@ class InternalDatabaseTests(TestCase):
                 for metric in weather_data.WEATHER_API_PARAMS
                 for city in city_values
             },
-            index=index,
+            index=weather_index,
         )
         read_weather.return_value.loc[index[0], "Djelfa_precipitation"] = None
+        self.assertTrue(
+            pd.isna(
+                weather_features(index[0], index[-1]).iloc[0][
+                    "NationalAverage_precipitation"
+                ]
+            )
+        )
+        read_weather.return_value.loc[index[0], "Djelfa_precipitation"] = 30.0
         weights = {
             str(city["name"]): float(city["weight"])
             for city in weather_data.CITIES
@@ -49,13 +95,17 @@ class InternalDatabaseTests(TestCase):
         self.assertAlmostEqual(
             stored.iloc[0]["NationalAverage_temperature_2m"], expected
         )
-        self.assertTrue(pd.isna(stored.iloc[0]["NationalAverage_precipitation"]))
+        self.assertEqual(
+            stored.iloc[0]["Alger_temperature_2m__roll_mean168_lag24"], 10.0
+        )
         self.assertTrue(
             all(
                 f"NationalAverage_{metric}" in stored
                 for metric in weather_data.WEATHER_API_PARAMS
             )
         )
+        self.assertEqual(read_weather.call_count, 2)
+        read_weather.assert_called_with(weather_index[0], index[-1])
 
     @patch("engine.ingestion.internal_db.load_data.read")
     def test_population_rejects_incomplete_external_load(self, read_load) -> None:

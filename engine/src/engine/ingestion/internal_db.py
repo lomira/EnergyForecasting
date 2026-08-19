@@ -28,6 +28,20 @@ def _validate_load_data(data: pd.DataFrame) -> None:
         raise ValueError("Load data must be a continuous hourly series")
 
 
+def _validate_covariates(data: pd.DataFrame) -> None:
+    """Reject incomplete covariates before storing them."""
+    if data.empty or data.index.isna().any():
+        raise ValueError("Covariates must not be empty or have missing timestamps")
+    if data.index.has_duplicates:
+        raise ValueError("Covariate timestamps must not contain duplicates")
+    expected_index = pd.date_range(data.index.min(), data.index.max(), freq="h")
+    if not data.index.equals(expected_index):
+        raise ValueError("Covariates must be a continuous hourly series")
+    missing_columns = data.columns[data.isna().any()].tolist()
+    if missing_columns:
+        raise ValueError(f"Covariates contain missing values: {missing_columns}")
+
+
 def _future_covariates(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.DataFrame:
     weather = weather_features(from_date, to_date)
     holidays = holiday_features(from_date, to_date)
@@ -44,6 +58,7 @@ def populate_internal_db(*, db_path: Path = DB_PATH) -> None:
     from_date = cast(pd.Timestamp, corrected_load.index.min())
     to_date = cast(pd.Timestamp, corrected_load.index.max())
     future_covariates = _future_covariates(from_date, to_date)
+    _validate_covariates(future_covariates)
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as connection:

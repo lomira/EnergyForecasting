@@ -8,7 +8,11 @@ import weather_data
 def weather_features(
     from_date: pd.Timestamp, to_date: pd.Timestamp
 ) -> pd.DataFrame:
-    weather = weather_data.read(from_date, to_date)
+    lag = 24
+    windows = (24, 168)
+    weather = weather_data.read(
+        from_date - pd.Timedelta(hours=lag + max(windows) - 1), to_date
+    )
     weights = pd.Series(
         {str(city["name"]): float(city["weight"]) for city in weather_data.CITIES}
     )
@@ -21,8 +25,8 @@ def weather_features(
 
     features: dict[str, pd.Series] = {}
     for column in weather.columns:
-        shifted = weather[column].shift(24)
-        for window in (24, 168):
+        shifted = weather[column].shift(lag)
+        for window in windows:
             rolling = shifted.rolling(window, min_periods=window)
             features[f"{column}__roll_mean{window}_lag24"] = rolling.mean()
             features[f"{column}__roll_std{window}_lag24"] = rolling.std()
@@ -32,7 +36,7 @@ def weather_features(
             pd.DataFrame(features, index=weather.index),
         ],
         axis=1,
-    ).bfill().ffill()
+    )
     return pd.concat(
         [city_features, pd.DataFrame(national_averages, index=weather.index)], axis=1
-    )
+    ).loc[from_date:to_date]
