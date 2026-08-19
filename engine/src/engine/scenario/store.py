@@ -95,3 +95,17 @@ def read_hourly_scenario(
     frame.index.name = "datetime"
     frame.columns.name = None
     return TimeSeries.from_dataframe(frame, fill_missing_dates=True, freq="h")
+
+
+def delete_hourly_scenario(
+    scenario_id: str,
+    *,
+    db_path: Path = DB_PATH,
+) -> None:
+    """Delete a materialized hourly scenario by ID."""
+    with _database(db_path) as connection:
+        deleted = connection.execute(
+            "DELETE FROM hourly_scenario WHERE scenario_id = ?", [scenario_id]
+        ).rowcount
+    if not deleted:
+        raise ValueError(f"Unknown hourly scenario: {scenario_id}")
