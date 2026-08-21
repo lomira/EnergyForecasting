@@ -9,6 +9,7 @@ import pandas as pd
 import weather_data
 from engine.featurize.weather import weather_features
 from engine.ingestion.internal_db import (
+    correct_loads_at,
     populate_internal_db,
     read_corrected_load,
     read_future_covariates,
@@ -16,6 +17,26 @@ from engine.ingestion.internal_db import (
 
 
 class InternalDatabaseTests(TestCase):
+    @patch("engine.ingestion.internal_db._future_covariates")
+    @patch("engine.ingestion.internal_db.load_data.read")
+    def test_correct_loads_at_updates_selected_rows(
+        self, read_load, future_covariates
+    ) -> None:
+        index = pd.date_range("2024-01-01", periods=3, freq="h")
+        read_load.return_value = pd.DataFrame({"load_mw": [100, 110, 120]}, index=index)
+        future_covariates.return_value = pd.DataFrame({"temperature": [1, 2, 3]}, index=index)
+
+        with TemporaryDirectory() as directory:
+            db_path = Path(directory) / "internal.sqlite3"
+            populate_internal_db(db_path=db_path)
+            correct_loads_at(
+                pd.DataFrame({"datetime": [index[1]], "load_mw": [115]}),
+                db_path=db_path,
+            )
+            corrected = read_corrected_load(db_path=db_path)
+
+        self.assertEqual(corrected["load_mw"].tolist(), [100, 115, 120])
+
     @patch("engine.ingestion.internal_db._future_covariates")
     @patch("engine.ingestion.internal_db.load_data.read")
     def test_population_validates_covariates_without_rejecting_negative_values(

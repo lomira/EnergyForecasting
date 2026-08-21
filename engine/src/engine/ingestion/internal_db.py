@@ -90,6 +90,34 @@ def populate_internal_db(*, db_path: Path = DB_PATH) -> None:
     )
 
 
+def correct_loads_at(data: pd.DataFrame, *, db_path: Path = DB_PATH) -> None:
+    """Update corrected loads from a dataframe with datetime and load_mw columns."""
+    if set(data.columns) != {"datetime", "load_mw"}:
+        raise ValueError("Corrections must have datetime and load_mw columns")
+
+    corrections = data.copy()
+    corrections["datetime"] = pd.to_datetime(corrections["datetime"], errors="coerce")
+    corrections["load_mw"] = pd.to_numeric(corrections["load_mw"], errors="coerce")
+    if corrections.isna().any().any():
+        raise ValueError("Corrections must not contain missing or invalid values")
+    if corrections["load_mw"].lt(0).any():
+        raise ValueError("Load values must be non-negative")
+    if corrections["datetime"].duplicated().any():
+        raise ValueError("Correction timestamps must not contain duplicates")
+    if not db_path.exists():
+        raise ValueError(f"Internal database does not exist: {db_path}")
+
+    with closing(sqlite3.connect(db_path)) as connection, connection:
+        for timestamp, load_mw in corrections.itertuples(index=False, name=None):
+            updated = connection.execute(
+                "UPDATE corrected_load SET load_mw = ? WHERE datetime = ?",
+                (float(load_mw), timestamp.isoformat(sep=" ")),
+            )
+            if updated.rowcount != 1:
+                raise ValueError(f"No corrected load found at {timestamp}")
+    logger.info(f"Corrected {len(corrections):,.0f} loads")
+
+
 def _read(
     table: str,
     from_date: pd.Timestamp | None,

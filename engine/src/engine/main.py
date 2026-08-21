@@ -6,7 +6,7 @@ from engine.darts_pipeline.backtest_store import save_backtest_result
 from engine.darts_pipeline.builder import build_model
 from engine.darts_pipeline.runner import run_backtest, run_forecast
 from engine.darts_pipeline.spec import BacktestSpec
-from engine.ingestion.internal_db import populate_internal_db
+from engine.ingestion.internal_db import correct_loads_at, populate_internal_db
 from engine.ingestion.temp_utils import populate_externals_dbs
 from engine.logging_config import logger, setup_logging
 from engine.model_configs import model_hourly
@@ -19,6 +19,15 @@ setup_logging(level="INFO")
 if __name__ == "__main__":
     populate_externals_dbs()
     populate_internal_db()
+
+    # Loads correction
+    correction = pd.DataFrame(
+        {
+            "datetime": ["2008-01-01 04:00:00", "2017-10-12 23:00:00"],
+            "load_mw": [3160, 5656],
+        }
+    )
+    correct_loads_at(correction)
 
     #  -- SELECT THE MODEL ---------
     model_config_name = "lightgbm_nex"
