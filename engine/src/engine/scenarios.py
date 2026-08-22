@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from darts import TimeSeries
 
-from engine.ingestion.internal_db import read_future_covariates
+from engine.storage.datasets import read_future_covariates
 from load_data import get_date_range
 
 

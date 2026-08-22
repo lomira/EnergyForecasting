@@ -6,8 +6,8 @@ from unittest import TestCase
 import pandas as pd
 from darts import TimeSeries
 
-from engine.scenario.future_scenario import validate_hourly_scenario
-from engine.scenario.store import (
+from engine.scenarios import validate_hourly_scenario
+from engine.storage.scenarios import (
     delete_hourly_scenario,
     read_hourly_scenario,
     save_hourly_scenario,

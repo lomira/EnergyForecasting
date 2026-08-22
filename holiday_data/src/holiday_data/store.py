@@ -64,4 +64,5 @@ def read(
     hours = pd.date_range(from_date, to_date, freq="h")
     data = data.set_index("date").reindex(hours).set_axis(hours)
     data.index.name = "datetime"
+    # TODO Check why we drop na here we should not have any na values since we reindex with the hours range
     return data.dropna().astype(bool)

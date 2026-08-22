@@ -3,7 +3,7 @@
 import pandas as pd
 
 import holiday_data
-from engine.featurize.features import Feature
+from engine.features.names import Feature
 
 
 def holiday_features(from_date: pd.Timestamp, to_date: pd.Timestamp) -> pd.DataFrame:

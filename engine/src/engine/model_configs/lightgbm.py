@@ -2,10 +2,10 @@
 
 from darts.models import LightGBMModel
 
-from engine.featurize.calendar import encode_onehot_custom_weekday
-from engine.featurize.features import Feature
+from engine.features.calendar import encode_onehot_custom_weekday
+from engine.features.names import Feature
+from engine.forecasting.peak_reconciled import PeakReconciledLightGBMModel
 from engine.model_configs.registry import register_hourly
-from engine.peak_reconciled_lightgbm import PeakReconciledLightGBMModel
 
 
 @register_hourly

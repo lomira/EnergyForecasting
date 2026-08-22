@@ -9,9 +9,9 @@ from darts import TimeSeries
 from darts.models import TFTModel
 from torch import nn
 
-from engine.darts_pipeline.builder import build_model
-from engine.darts_pipeline.runner import run_backtest
-from engine.darts_pipeline.spec import BacktestSpec
+from engine.forecasting.builder import build_model
+from engine.forecasting.runner import run_backtest
+from engine.forecasting.spec import BacktestSpec
 from engine.model_configs import model_hourly
 
 
@@ -135,11 +135,9 @@ class TrainingLengthTests(TestCase):
         )
 
         with (
-            patch("engine.darts_pipeline.runner.build_model") as build_model,
-            patch(
-                "engine.darts_pipeline.runner.build_data_transformers", return_value={}
-            ),
-            patch("engine.darts_pipeline.runner.logger.info") as log_info,
+            patch("engine.forecasting.runner.build_model") as build_model,
+            patch("engine.forecasting.runner.build_data_transformers", return_value={}),
+            patch("engine.forecasting.runner.logger.info") as log_info,
         ):
             model = build_model.return_value
             model.supports_future_covariates = False
@@ -150,7 +148,5 @@ class TrainingLengthTests(TestCase):
         self.assertEqual(
             model.historical_forecasts.call_args.kwargs["train_length"], 123
         )
-        self.assertTrue(
-            model.historical_forecasts.call_args.kwargs["last_points_only"]
-        )
+        self.assertTrue(model.historical_forecasts.call_args.kwargs["last_points_only"])
         self.assertEqual(len(log_info.call_args_list), 1)

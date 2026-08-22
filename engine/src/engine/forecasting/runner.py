@@ -8,8 +8,8 @@ import pandas as pd
 from darts import TimeSeries
 from darts.metrics import mape
 
-from engine.darts_pipeline.builder import build_data_transformers, build_model
-from engine.darts_pipeline.spec import BacktestSpec
+from engine.forecasting.builder import build_data_transformers, build_model
+from engine.forecasting.spec import BacktestSpec
 from engine.logging_config import logger
 
 

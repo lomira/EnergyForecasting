@@ -6,22 +6,21 @@ from unittest import TestCase
 import pandas as pd
 from darts import TimeSeries
 
-from engine.darts_pipeline.backtest_store import (
+from engine.forecasting.runner import backtest_metrics
+from engine.forecasting.spec import BacktestSpec
+from engine.model_configs import model_hourly
+from engine.storage.backtests import (
     list_backtest_results,
     read_backtest_result,
     save_backtest_result,
 )
-from engine.darts_pipeline.spec import BacktestSpec
-from engine.model_configs import model_hourly
 
 
 class BacktestStoreTests(TestCase):
     def setUp(self) -> None:
         self.index = pd.date_range("2024-01-01", periods=48, freq="h")
         self.actual = TimeSeries.from_times_and_values(self.index, range(1, 49))
-        self.forecast = TimeSeries.from_times_and_values(
-            self.index[23::24], [25, 46]
-        )
+        self.forecast = TimeSeries.from_times_and_values(self.index[23::24], [25, 46])
         self.spec = BacktestSpec(
             forecast_horizon=24,
             stride=24,
@@ -29,6 +28,7 @@ class BacktestStoreTests(TestCase):
             start=self.index[0],
         )
         self.config = model_hourly["lightgbm_nex"]
+        self.metrics = backtest_metrics(self.actual, self.forecast)
 
     def test_backtest_round_trip_and_listing(self) -> None:
         with TemporaryDirectory() as directory:
@@ -39,6 +39,7 @@ class BacktestStoreTests(TestCase):
                 self.spec,
                 self.actual,
                 self.forecast,
+                metrics=self.metrics,
                 db_path=db_path,
             )
             second_id = save_backtest_result(
@@ -47,6 +48,7 @@ class BacktestStoreTests(TestCase):
                 self.spec,
                 self.actual,
                 self.forecast,
+                metrics=self.metrics,
                 db_path=db_path,
             )
 
@@ -78,6 +80,7 @@ class BacktestStoreTests(TestCase):
                     self.spec,
                     self.actual,
                     forecast,
+                    metrics=self.metrics,
                     db_path=db_path,
                 )
             self.assertFalse(db_path.exists())

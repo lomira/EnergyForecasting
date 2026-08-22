@@ -3,19 +3,18 @@
 import json
 import pickle
 import sqlite3
-from collections.abc import Generator
-from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 from uuid import uuid4
 
 import pandas as pd
 from darts import TimeSeries
 
-from engine.darts_pipeline.runner import backtest_metrics
-from engine.darts_pipeline.spec import BacktestSpec
-from engine.ingestion.internal_db import DB_PATH
+from engine.forecasting.spec import BacktestSpec
+from engine.storage.datasets import DB_PATH
+from engine.storage.sqlite import database
 
 
 @dataclass
@@ -32,37 +31,32 @@ class BacktestResult:
     curve: pd.DataFrame
 
 
-@contextmanager
-def _database(db_path: Path) -> Generator[sqlite3.Connection]:
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    with closing(sqlite3.connect(db_path)) as connection:
-        connection.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS backtest_result (
-                backtest_id TEXT PRIMARY KEY,
-                created_at TEXT NOT NULL,
-                configuration_name TEXT NOT NULL,
-                model_class TEXT NOT NULL,
-                validation_start TEXT NOT NULL,
-                validation_end TEXT NOT NULL,
-                config BLOB NOT NULL,
-                spec BLOB NOT NULL,
-                metrics_json TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS backtest_result_configuration_created
-            ON backtest_result (configuration_name, created_at DESC);
-            CREATE TABLE IF NOT EXISTS backtest_point (
-                backtest_id TEXT NOT NULL,
-                target_datetime TEXT NOT NULL,
-                actual REAL NOT NULL,
-                forecast REAL NOT NULL,
-                PRIMARY KEY (backtest_id, target_datetime),
-                FOREIGN KEY (backtest_id) REFERENCES backtest_result (backtest_id)
-            );
-            """
-        )
-        yield connection
-        connection.commit()
+def _create_tables(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS backtest_result (
+            backtest_id TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            configuration_name TEXT NOT NULL,
+            model_class TEXT NOT NULL,
+            validation_start TEXT NOT NULL,
+            validation_end TEXT NOT NULL,
+            config BLOB NOT NULL,
+            spec BLOB NOT NULL,
+            metrics_json TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS backtest_result_configuration_created
+        ON backtest_result (configuration_name, created_at DESC);
+        CREATE TABLE IF NOT EXISTS backtest_point (
+            backtest_id TEXT NOT NULL,
+            target_datetime TEXT NOT NULL,
+            actual REAL NOT NULL,
+            forecast REAL NOT NULL,
+            PRIMARY KEY (backtest_id, target_datetime),
+            FOREIGN KEY (backtest_id) REFERENCES backtest_result (backtest_id)
+        );
+        """
+    )
 
 
 def save_backtest_result(
@@ -72,6 +66,7 @@ def save_backtest_result(
     actual: TimeSeries,
     forecast: TimeSeries,
     *,
+    metrics: dict[str, float],
     db_path: Path = DB_PATH,
 ) -> str:
     """Persist an accepted backtest and return its generated ID."""
@@ -87,13 +82,13 @@ def save_backtest_result(
     if actual_values.isna().any():
         raise ValueError("Actual load must cover every forecast timestamp")
 
-    metrics = backtest_metrics(actual, forecast)
     metrics_json = json.dumps(metrics, allow_nan=False)
     model_class = config["model_cls"].__name__
     backtest_id = str(uuid4())
     created_at = datetime.now(UTC).isoformat()
 
-    with _database(db_path) as connection:
+    with database(db_path) as connection:
+        _create_tables(connection)
         connection.execute(
             """
             INSERT INTO backtest_result (
@@ -140,7 +135,8 @@ def list_backtest_results(
     """List retained backtests, newest first."""
     where = " WHERE configuration_name = ?" if configuration_name is not None else ""
     params = [configuration_name] if configuration_name is not None else []
-    with _database(db_path) as connection:
+    with database(db_path) as connection:
+        _create_tables(connection)
         data = pd.read_sql_query(
             """
             SELECT backtest_id, created_at, configuration_name, model_class,
@@ -166,7 +162,8 @@ def read_backtest_result(
     db_path: Path = DB_PATH,
 ) -> BacktestResult:
     """Load a retained backtest by ID."""
-    with _database(db_path) as connection:
+    with database(db_path) as connection:
+        _create_tables(connection)
         metadata = connection.execute(
             """
             SELECT created_at, configuration_name, model_class,
@@ -191,11 +188,11 @@ def read_backtest_result(
     curve.index.name = "datetime"
     return BacktestResult(
         backtest_id=backtest_id,
-        created_at=pd.Timestamp(metadata[0]),
+        created_at=cast(pd.Timestamp, pd.Timestamp(metadata[0])),
         configuration_name=metadata[1],
         model_class=metadata[2],
-        validation_start=pd.Timestamp(metadata[3]),
-        validation_end=pd.Timestamp(metadata[4]),
+        validation_start=cast(pd.Timestamp, pd.Timestamp(metadata[3])),
+        validation_end=cast(pd.Timestamp, pd.Timestamp(metadata[4])),
         config=pickle.loads(metadata[5]),
         spec=pickle.loads(metadata[6]),
         metrics=json.loads(metadata[7]),

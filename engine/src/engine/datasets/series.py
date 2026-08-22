@@ -1,9 +1,9 @@
-"""Bridge between the data packages and Darts TimeSeries."""
+"""Convert stored datasets to Darts TimeSeries."""
 
 import pandas as pd
 from darts import TimeSeries
 
-from engine.ingestion.internal_db import (
+from engine.storage.datasets import (
     read_corrected_load,
     read_future_covariates,
 )

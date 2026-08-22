@@ -2,22 +2,22 @@ from datetime import timedelta
 
 import pandas as pd
 
-from engine.darts_pipeline.backtest_store import save_backtest_result
-from engine.darts_pipeline.builder import build_model
-from engine.darts_pipeline.runner import run_backtest, run_forecast
-from engine.darts_pipeline.spec import BacktestSpec
-from engine.ingestion.internal_db import correct_loads_at, populate_internal_db
-from engine.ingestion.temp_utils import populate_externals_dbs
+from engine.datasets.pipeline import initialize_source_databases, populate_internal_db
+from engine.datasets.series import get_covariate_ts, get_load_ts
+from engine.forecasting.builder import build_model
+from engine.forecasting.runner import backtest_metrics, run_backtest, run_forecast
+from engine.forecasting.spec import BacktestSpec
 from engine.logging_config import logger, setup_logging
 from engine.model_configs import model_hourly
-from engine.scenario.future_scenario import random_future_scenario
-from engine.series_utils import get_covariate_ts, get_load_ts
+from engine.scenarios import random_future_scenario
+from engine.storage.backtests import save_backtest_result
+from engine.storage.datasets import correct_loads_at
 
 setup_logging(level="INFO")
 
 
 if __name__ == "__main__":
-    populate_externals_dbs()
+    initialize_source_databases()
     populate_internal_db()
 
     # Loads correction
@@ -68,6 +68,7 @@ if __name__ == "__main__":
         spec,
         series,
         backtest,
+        metrics=backtest_metrics(series, backtest),
     )
     logger.success(f"Saved backtest result {backtest_id}")
 

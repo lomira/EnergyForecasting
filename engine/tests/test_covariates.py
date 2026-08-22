@@ -2,14 +2,15 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import pandas as pd
-from engine.series_utils import (
-    covariates_time_series,
+
+from engine.datasets.series import (
+    get_covariate_ts,
     get_load_ts,
 )
 
 
 class SeriesUtilsTests(TestCase):
-    @patch("engine.series_utils.read_future_covariates")
+    @patch("engine.datasets.series.read_future_covariates")
     def test_covariates_use_internal_database(self, read_covariates) -> None:
         index = pd.date_range("2024-01-01", periods=3, freq="h", name="datetime")
         read_covariates.return_value = pd.DataFrame(
@@ -21,7 +22,7 @@ class SeriesUtilsTests(TestCase):
             index=index,
         )
 
-        series = covariates_time_series(index[0], index[-1])
+        series = get_covariate_ts(index[0], index[-1])
         data = series.to_dataframe()
 
         self.assertEqual(
@@ -35,7 +36,7 @@ class SeriesUtilsTests(TestCase):
         self.assertEqual(data.iloc[0]["Alger_temperature_2m"], 10.0)
         self.assertEqual(data.iloc[1]["holidays"], 0.0)
 
-    @patch("engine.series_utils.read_corrected_load")
+    @patch("engine.datasets.series.read_corrected_load")
     def test_load_series_uses_internal_database(self, read_load) -> None:
         index = pd.date_range("2024-01-01", periods=2, freq="h", name="datetime")
         read_load.return_value = pd.DataFrame({"load_mw": [100.0, 110.0]}, index=index)

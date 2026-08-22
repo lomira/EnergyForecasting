@@ -5,17 +5,17 @@ import numpy as np
 import pandas as pd
 from darts import TimeSeries
 
-from engine.darts_pipeline.runner import (
-    backtest_metrics,
-    run_backtest,
-    run_forecast,
-)
-from engine.darts_pipeline.spec import BacktestSpec
-from engine.peak_reconciled_lightgbm import (
+from engine.forecasting.peak_reconciled import (
     PeakReconciledLightGBMModel,
     aggregate_blocks,
     reconcile_daily_peaks,
 )
+from engine.forecasting.runner import (
+    backtest_metrics,
+    run_backtest,
+    run_forecast,
+)
+from engine.forecasting.spec import BacktestSpec
 
 
 class PeakReconciledLightGBMTests(TestCase):
@@ -69,12 +69,12 @@ class PeakReconciledLightGBMTests(TestCase):
             start=index[0],
         )
         with (
-            patch("engine.darts_pipeline.runner.build_model") as build_model,
+            patch("engine.forecasting.runner.build_model") as build_model,
             patch(
-                "engine.darts_pipeline.runner.build_data_transformers",
+                "engine.forecasting.runner.build_data_transformers",
                 return_value={},
             ),
-            patch("engine.darts_pipeline.runner.logger.info") as log_info,
+            patch("engine.forecasting.runner.logger.info") as log_info,
         ):
             model = build_model.return_value
             model.supports_future_covariates = False
@@ -82,9 +82,7 @@ class PeakReconciledLightGBMTests(TestCase):
             result = run_backtest({"train_length": 24}, spec, series)
 
         self.assertIs(result, forecast)
-        self.assertTrue(
-            model.historical_forecasts.call_args.kwargs["last_points_only"]
-        )
+        self.assertTrue(model.historical_forecasts.call_args.kwargs["last_points_only"])
         self.assertEqual(
             [call.args[1] for call in log_info.call_args_list],
             ["MagicMock backtest"],
@@ -127,7 +125,7 @@ class PeakReconciledLightGBMTests(TestCase):
         }
 
         with patch(
-            "engine.peak_reconciled_lightgbm.reconcile_daily_peaks",
+            "engine.forecasting.peak_reconciled.reconcile_daily_peaks",
             wraps=reconcile_daily_peaks,
         ) as reconcile:
             forecast = run_forecast(

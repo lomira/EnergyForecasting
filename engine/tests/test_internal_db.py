@@ -7,24 +7,26 @@ from unittest.mock import patch
 import pandas as pd
 
 import weather_data
-from engine.featurize.weather import weather_features
-from engine.ingestion.internal_db import (
+from engine.datasets.pipeline import populate_internal_db
+from engine.features.weather import weather_features
+from engine.storage.datasets import (
     correct_loads_at,
-    populate_internal_db,
     read_corrected_load,
     read_future_covariates,
 )
 
 
 class InternalDatabaseTests(TestCase):
-    @patch("engine.ingestion.internal_db._future_covariates")
-    @patch("engine.ingestion.internal_db.load_data.read")
+    @patch("engine.datasets.pipeline._future_covariates")
+    @patch("engine.datasets.pipeline.load_data.read")
     def test_correct_loads_at_updates_selected_rows(
         self, read_load, future_covariates
     ) -> None:
         index = pd.date_range("2024-01-01", periods=3, freq="h")
         read_load.return_value = pd.DataFrame({"load_mw": [100, 110, 120]}, index=index)
-        future_covariates.return_value = pd.DataFrame({"temperature": [1, 2, 3]}, index=index)
+        future_covariates.return_value = pd.DataFrame(
+            {"temperature": [1, 2, 3]}, index=index
+        )
 
         with TemporaryDirectory() as directory:
             db_path = Path(directory) / "internal.sqlite3"
@@ -37,8 +39,8 @@ class InternalDatabaseTests(TestCase):
 
         self.assertEqual(corrected["load_mw"].tolist(), [100, 115, 120])
 
-    @patch("engine.ingestion.internal_db._future_covariates")
-    @patch("engine.ingestion.internal_db.load_data.read")
+    @patch("engine.datasets.pipeline._future_covariates")
+    @patch("engine.datasets.pipeline.load_data.read")
     def test_population_validates_covariates_without_rejecting_negative_values(
         self, read_load, future_covariates
     ) -> None:
@@ -71,9 +73,9 @@ class InternalDatabaseTests(TestCase):
             stored = read_future_covariates(index[0], index[-1], db_path=db_path)
         self.assertEqual(stored.iloc[0]["temperature"], -5.0)
 
-    @patch("engine.featurize.weather.weather_data.read")
-    @patch("engine.ingestion.internal_db.holiday_features")
-    @patch("engine.ingestion.internal_db.load_data.read")
+    @patch("engine.features.weather.weather_data.read")
+    @patch("engine.datasets.pipeline.holiday_features")
+    @patch("engine.datasets.pipeline.load_data.read")
     def test_population_stores_national_weather_averages(
         self, read_load, read_holidays, read_weather
     ) -> None:
@@ -128,7 +130,7 @@ class InternalDatabaseTests(TestCase):
         self.assertEqual(read_weather.call_count, 2)
         read_weather.assert_called_with(weather_index[0], index[-1])
 
-    @patch("engine.ingestion.internal_db.load_data.read")
+    @patch("engine.datasets.pipeline.load_data.read")
     def test_population_rejects_incomplete_external_load(self, read_load) -> None:
         index = pd.date_range("2024-01-01", periods=3, freq="h")
         valid = pd.DataFrame({"load_mw": [100.0, 110.0, 120.0]}, index=index)
@@ -150,8 +152,8 @@ class InternalDatabaseTests(TestCase):
             ):
                 populate_internal_db(db_path=Path(directory) / "internal.sqlite3")
 
-    @patch("engine.ingestion.internal_db._future_covariates")
-    @patch("engine.ingestion.internal_db.load_data.read")
+    @patch("engine.datasets.pipeline._future_covariates")
+    @patch("engine.datasets.pipeline.load_data.read")
     def test_population_replaces_both_internal_tables(
         self, read_load, future_covariates
     ) -> None:

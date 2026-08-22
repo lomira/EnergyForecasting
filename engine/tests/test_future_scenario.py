@@ -2,7 +2,8 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import pandas as pd
-from engine.scenario.future_scenario import (
+
+from engine.scenarios import (
     create_hourly_scenario,
     random_future_scenario,
 )
@@ -14,7 +15,7 @@ class FutureScenarioTests(TestCase):
         self.assertIsNone(random_future_scenario(None, start, start))
         self.assertIsNone(random_future_scenario([], start, start))
 
-    @patch("engine.scenario.future_scenario.read_future_covariates")
+    @patch("engine.scenarios.read_future_covariates")
     def test_hourly_scenario_uses_each_reference_timestamp(
         self, read_covariates
     ) -> None:
@@ -47,7 +48,7 @@ class FutureScenarioTests(TestCase):
             )
         )
 
-    @patch("engine.scenario.future_scenario.read_future_covariates")
+    @patch("engine.scenarios.read_future_covariates")
     def test_hourly_scenario_rejects_null_references(self, read_covariates) -> None:
         reference = pd.Timestamp("2020-01-01 00:00")
         read_covariates.return_value = pd.DataFrame(
@@ -61,9 +62,9 @@ class FutureScenarioTests(TestCase):
                 {"temperature": pd.DatetimeIndex([reference])},
             )
 
-    @patch("engine.scenario.future_scenario.create_hourly_scenario")
-    @patch("engine.scenario.future_scenario.get_date_range")
-    @patch("engine.scenario.future_scenario.np.random.default_rng")
+    @patch("engine.scenarios.create_hourly_scenario")
+    @patch("engine.scenarios.get_date_range")
+    @patch("engine.scenarios.np.random.default_rng")
     def test_random_future_scenario(
         self, default_rng, get_date_range, create_scenario
     ) -> None:

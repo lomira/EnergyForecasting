@@ -8,7 +8,7 @@ from darts.models import TFTModel
 from sklearn.preprocessing import RobustScaler
 from torch import nn
 
-from engine.featurize.features import Feature
+from engine.features.names import Feature
 from engine.model_configs.registry import register_hourly
 
 

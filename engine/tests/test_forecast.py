@@ -3,12 +3,13 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 from darts import TimeSeries
-from engine.darts_pipeline.runner import run_forecast
+
+from engine.forecasting.runner import run_forecast
 
 
 class ForecastTests(TestCase):
-    @patch("engine.darts_pipeline.runner.build_model")
-    @patch("engine.darts_pipeline.runner.build_data_transformers")
+    @patch("engine.forecasting.runner.build_model")
+    @patch("engine.forecasting.runner.build_data_transformers")
     def test_forecast_uses_training_window_and_transformers(
         self, build_transformers, build_model
     ) -> None:
@@ -74,8 +75,8 @@ class ForecastTests(TestCase):
         )
         self.assertIs(result, forecast)
 
-    @patch("engine.darts_pipeline.runner.build_model")
-    @patch("engine.darts_pipeline.runner.build_data_transformers", return_value={})
+    @patch("engine.forecasting.runner.build_model")
+    @patch("engine.forecasting.runner.build_data_transformers", return_value={})
     def test_forecast_ignores_covariates_for_empty_feature_subset(
         self, _build_transformers, build_model
     ) -> None:
@@ -100,7 +101,7 @@ class ForecastTests(TestCase):
         model.fit.assert_called_once_with(series[-3:], future_covariates=None)
         model.predict.assert_called_once_with(n=2, future_covariates=None)
 
-    @patch("engine.darts_pipeline.runner.build_model")
+    @patch("engine.forecasting.runner.build_model")
     def test_forecast_rejects_features_for_unsupported_model(self, build_model) -> None:
         index = pd.date_range("2024-01-01", periods=6, freq="h")
         series = TimeSeries.from_times_and_values(index, range(6))
@@ -113,7 +114,7 @@ class ForecastTests(TestCase):
                 2,
             )
 
-    @patch("engine.darts_pipeline.runner.build_model")
+    @patch("engine.forecasting.runner.build_model")
     def test_forecast_rejects_missing_feature(self, build_model) -> None:
         index = pd.date_range("2024-01-01", periods=6, freq="h")
         series = TimeSeries.from_times_and_values(index, range(6))

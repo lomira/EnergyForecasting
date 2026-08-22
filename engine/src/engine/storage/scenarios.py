@@ -1,8 +1,7 @@
 """Persistence for materialized hourly scenarios."""
 
 import sqlite3
-from collections.abc import Generator, Mapping
-from contextlib import closing, contextmanager
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -10,29 +9,25 @@ from uuid import uuid4
 import pandas as pd
 from darts import TimeSeries
 
-from engine.ingestion.internal_db import DB_PATH
-from engine.scenario.future_scenario import validate_hourly_scenario
+from engine.scenarios import validate_hourly_scenario
+from engine.storage.datasets import DB_PATH
+from engine.storage.sqlite import database
 
 
-@contextmanager
-def _database(db_path: Path) -> Generator[sqlite3.Connection]:
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    with closing(sqlite3.connect(db_path)) as connection:
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS hourly_scenario (
-                scenario_id TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                target_datetime TEXT NOT NULL,
-                variable_name TEXT NOT NULL,
-                value REAL NOT NULL,
-                reference_datetime TEXT NOT NULL,
-                PRIMARY KEY (scenario_id, target_datetime, variable_name)
-            )
-            """
+def _create_table(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS hourly_scenario (
+            scenario_id TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            target_datetime TEXT NOT NULL,
+            variable_name TEXT NOT NULL,
+            value REAL NOT NULL,
+            reference_datetime TEXT NOT NULL,
+            PRIMARY KEY (scenario_id, target_datetime, variable_name)
         )
-        yield connection
-        connection.commit()
+        """
+    )
 
 
 def save_hourly_scenario(
@@ -58,7 +53,8 @@ def save_hourly_scenario(
         for position, target in enumerate(data.index)
         for variable in data.columns
     ]
-    with _database(db_path) as connection:
+    with database(db_path) as connection:
+        _create_table(connection)
         connection.executemany(
             """
             INSERT INTO hourly_scenario (
@@ -77,7 +73,8 @@ def read_hourly_scenario(
     db_path: Path = DB_PATH,
 ) -> TimeSeries:
     """Load a materialized hourly scenario by ID."""
-    with _database(db_path) as connection:
+    with database(db_path) as connection:
+        _create_table(connection)
         data = pd.read_sql_query(
             """
             SELECT target_datetime, variable_name, value
@@ -103,7 +100,8 @@ def delete_hourly_scenario(
     db_path: Path = DB_PATH,
 ) -> None:
     """Delete a materialized hourly scenario by ID."""
-    with _database(db_path) as connection:
+    with database(db_path) as connection:
+        _create_table(connection)
         deleted = connection.execute(
             "DELETE FROM hourly_scenario WHERE scenario_id = ?", [scenario_id]
         ).rowcount
